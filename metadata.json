@@ -1,0 +1,7 @@
+{
+  "name": "EcclesiaSaaS - Gestão de Visão Celular",
+  "description": "Uma plataforma SaaS completa para gestão eclesiástica baseada na Visão Celular (Escada do Sucesso), com suporte multi-tenant e relatórios inteligentes por IA.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
