@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Users, MapPin, Calendar, Clock, User, Heart } from 'lucide-react';
+import { X, Save, Users, MapPin, Calendar, Clock, User, Heart, Image as ImageIcon, Upload } from 'lucide-react';
 import { Cell, Member } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface CellModalProps {
 	isOpen: boolean;
@@ -19,9 +20,12 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 		address: '',
 		meetingDay: 'Terça-feira',
 		meetingTime: '20:00',
-		status: 'ACTIVE'
+		status: 'ACTIVE',
+		logo: ''
 	});
 	const [loading, setLoading] = useState(false);
+	const [logoFile, setLogoFile] = useState<File | null>(null);
+	const [uploadingLogo, setUploadingLogo] = useState(false);
 
 	useEffect(() => {
 		if (cell) {
@@ -34,9 +38,11 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 				address: '',
 				meetingDay: 'Terça-feira',
 				meetingTime: '20:00',
-				status: 'ACTIVE'
+				status: 'ACTIVE',
+				logo: ''
 			});
 		}
+		setLogoFile(null);
 	}, [cell, isOpen]);
 
 	if (!isOpen) return null;
@@ -45,13 +51,42 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 		e.preventDefault();
 		try {
 			setLoading(true);
-			await onSave(formData);
+			let finalLogoUrl = formData.logo;
+
+			if (logoFile) {
+				setUploadingLogo(true);
+				const fileExt = logoFile.name.split('.').pop();
+				const fileName = `${Math.random()}.${fileExt}`;
+				const { error: uploadError, data } = await supabase.storage
+					.from('cell_logos')
+					.upload(fileName, logoFile);
+
+				if (uploadError) {
+					console.error('Erro ao fazer upload da logo:', uploadError);
+					const isBucketMissing = uploadError.message?.includes('Bucket not found');
+					alert(isBucketMissing
+						? 'Erro: O bucket "cell_logos" não existe no Supabase. Execute o script cells_migration.sql no SQL Editor do seu projeto.'
+						: 'Não foi possível enviar a logomarca. Verifique sua conexão ou permissões de armazenamento.');
+					setUploadingLogo(false);
+					setLoading(false);
+					return;
+				}
+
+				const { data: { publicUrl } } = supabase.storage
+					.from('cell_logos')
+					.getPublicUrl(fileName);
+
+				finalLogoUrl = publicUrl;
+			}
+
+			await onSave({ ...formData, logo: finalLogoUrl });
 			onClose();
 		} catch (error) {
 			console.error('Erro ao salvar célula:', error);
 			alert('Erro ao salvar os dados da célula.');
 		} finally {
 			setLoading(false);
+			setUploadingLogo(false);
 		}
 	};
 
@@ -164,6 +199,38 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 									onChange={(e) => setFormData({ ...formData, meetingTime: e.target.value })}
 									className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
 								/>
+							</div>
+						</div>
+
+						<div className="md:col-span-2 space-y-2">
+							<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Foto / Logo da Célula</label>
+							<div className="relative group">
+								<input
+									type="file"
+									accept="image/*"
+									onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+									className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+								/>
+								<div className="w-full bg-zinc-900 border border-white/5 border-dashed rounded-2xl p-6 flex items-center gap-4 group-hover:bg-zinc-800 transition-all">
+									<div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+										{logoFile ? (
+											<img src={URL.createObjectURL(logoFile)} alt="Preview" className="w-full h-full object-cover" />
+										) : formData.logo ? (
+											<img src={formData.logo} alt="Current" className="w-full h-full object-cover" />
+										) : (
+											<ImageIcon size={24} className="text-zinc-500" />
+										)}
+									</div>
+									<div className="flex-1">
+										<p className="text-sm font-bold text-white mb-1">
+											{logoFile ? logoFile.name : formData.logo ? 'Alterar foto atual' : 'Escolher arquivo'}
+										</p>
+										<p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+											JPG, PNG ou WEBP. Max 2MB.
+										</p>
+									</div>
+									<Upload size={20} className="text-zinc-500 group-hover:text-blue-500 transition-colors" />
+								</div>
 							</div>
 						</div>
 					</div>

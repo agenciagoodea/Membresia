@@ -25,6 +25,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		disciplerId: '',
 		avatar: '',
 		origin: MemberOrigin.OTHER_CHURCH,
+		cpf: '',
 		cep: '',
 		state: '',
 		city: '',
@@ -34,6 +35,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		complement: '',
 		maritalStatus: 'Solteiro(a)',
 		spouseId: '',
+		pastorId: '',
 		login: '',
 		password: ''
 	});
@@ -94,6 +96,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 				disciplerId: '',
 				avatar: '',
 				origin: MemberOrigin.OTHER_CHURCH,
+				cpf: '',
 				cep: '',
 				state: '',
 				city: '',
@@ -103,6 +106,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 				complement: '',
 				maritalStatus: 'Solteiro(a)',
 				spouseId: '',
+				pastorId: '',
 				login: '',
 				password: ''
 			});
@@ -407,15 +411,49 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 								<div className="relative">
 									<Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
 									<select
-										value={formData.disciplerId}
+										value={formData.disciplerId || ''}
 										onChange={(e) => setFormData({ ...formData, disciplerId: e.target.value })}
 										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
 									>
 										<option value="" className="bg-zinc-950">Sem Discipulador</option>
-										{allMembers.filter(m => m.id !== member?.id).map(m => (
-											<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
-										))}
+										{allMembers
+											.filter(m => m.id !== member?.id && m.role === UserRole.CELL_LEADER_DISCIPLE)
+											.map(m => (
+												<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
+											))}
 									</select>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Pastor Direto</label>
+								<div className="relative">
+									<Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+									<select
+										value={formData.pastorId || ''}
+										onChange={(e) => setFormData({ ...formData, pastorId: e.target.value })}
+										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
+									>
+										<option value="" className="bg-zinc-950">Sem Pastor</option>
+										{allMembers
+											.filter(m => m.id !== member?.id && m.role === UserRole.PASTOR)
+											.map(m => (
+												<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
+											))}
+									</select>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">CPF</label>
+								<div className="relative">
+									<Target className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+									<input
+										value={formData.cpf || ''}
+										onChange={e => setFormData({ ...formData, cpf: e.target.value })}
+										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
+										placeholder="000.000.000-00"
+									/>
 								</div>
 							</div>
 
@@ -465,9 +503,11 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 											className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
 										>
 											<option value="" className="bg-zinc-950">Selecione o Cônjuge</option>
-											{allMembers.filter(m => m.id !== member?.id).map(m => (
-												<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
-											))}
+											{allMembers
+												.filter(m => m.id !== member?.id && m.maritalStatus === 'Casado(a)')
+												.map(m => (
+													<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
+												))}
 										</select>
 									</div>
 								</div>

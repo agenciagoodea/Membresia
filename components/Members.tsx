@@ -22,7 +22,7 @@ import UpgradeModal from './Shared/UpgradeModal';
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
 import MemberModal from './MemberModal';
-
+import PageHeader from './Shared/PageHeader';
 const Members: React.FC = () => {
   const location = useLocation();
   const [filter, setFilter] = useState<string>('ALL');
@@ -191,30 +191,28 @@ const Members: React.FC = () => {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase mb-2">Membros & Discípulos</h2>
-          <p className="text-zinc-500 font-medium text-lg">
-            Monitorando <span className="text-zinc-300 font-black">{currentTotal}</span> de <span className="text-zinc-300 font-black">{planLimit}</span> vagas.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-6 py-3.5 bg-zinc-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
-            <Download size={16} /> Exportar
-          </button>
-          <button
-            onClick={handleAddMember}
-            className={`flex items-center gap-3 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.1em] transition-all shadow-xl ${isLimitReached
-              ? 'bg-zinc-800 text-zinc-500 border border-white/5 cursor-not-allowed opacity-50'
-              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
-              }`}
-          >
-            {isLimitReached ? <Lock size={18} /> : <Plus size={18} />}
-            Novo Registro
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title="Membros & Discípulos"
+        subtitle={`Monitorando ${currentTotal} de ${planLimit} vagas.`}
+        actions={
+          <>
+            <button className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-3.5 bg-zinc-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all w-full md:w-auto justify-center">
+              <Download size={16} /> Exportar
+            </button>
+            <button
+              onClick={handleAddMember}
+              className={`flex items-center gap-3 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-[0.1em] transition-all shadow-xl w-full md:w-auto justify-center ${isLimitReached
+                ? 'bg-zinc-800 text-zinc-500 border border-white/5 cursor-not-allowed opacity-50'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
+                }`}
+            >
+              {isLimitReached ? <Lock size={18} /> : <Plus size={18} />}
+              Novo Registro
+            </button>
+          </>
+        }
+      />
 
       <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden relative">
         <div className="p-8 border-b border-white/5 flex flex-wrap items-center justify-between gap-6">
@@ -246,7 +244,8 @@ const Members: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto scrollbar-hide">
-          <table className="w-full text-left">
+          {/* VISUALIZAÇÃO DESKTOP (Tabela) */}
+          <table className="w-full text-left hidden md:table">
             <thead className="bg-zinc-950/50 text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">
               <tr>
                 <th className="px-10 py-6">Membro Principal</th>
@@ -322,6 +321,57 @@ const Members: React.FC = () => {
               ))}
             </tbody>
           </table>
+
+          {/* VISUALIZAÇÃO MOBILE (Cards) */}
+          <div className="md:hidden flex flex-col divide-y divide-white/5">
+            {filteredMembers.map(member => (
+              <div key={member.id} className="p-5 hover:bg-white/5 transition-all">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="relative shrink-0">
+                    <img src={member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`} alt="" className="w-12 h-12 rounded-full ring-2 ring-white/10 shadow-xl object-cover aspect-square" />
+                    {member.role === UserRole.PASTOR && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center border-2 border-zinc-900">
+                        <Shield size={8} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-white tracking-tight uppercase leading-none mb-1 truncate">{member.name}</p>
+                    <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase truncate">{member.email || 'Sem e-mail'}</p>
+                    <p className="text-[10px] text-zinc-400 mt-1 uppercase truncate font-bold"><span className="text-zinc-600">Célula:</span> {cells.find(c => c.id === member.cellId)?.name || 'Nenhuma'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-full border border-white/5">
+                    {member.role}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border ${member.stage === LadderStage.SEND ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                    member.stage === LadderStage.DISCIPLE ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                      member.stage === LadderStage.CONSOLIDATE ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                        'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                    }`}>
+                    {member.stage}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a href={`mailto:${member.email}`} className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all text-[#10px]">
+                    <Mail size={14} />
+                  </a>
+                  <a href={`https://wa.me/55${member.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-[#10px]">
+                    <Phone size={14} />
+                  </a>
+                  <button onClick={() => handleEditMember(member)} className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all text-[#10px]">
+                    <Edit2 size={14} />
+                  </button>
+                  <button onClick={() => handleDeleteMember(member.id)} className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all text-[#10px]">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
         {filteredMembers.length === 0 && (
           <div className="py-32 text-center text-zinc-600">

@@ -72,6 +72,8 @@ export interface Member {
   origin?: MemberOrigin;
   baptismDate?: string;
   joinedDate: string;
+  cpf?: string;
+
   cep?: string;
   state?: string;
   city?: string;
@@ -81,6 +83,7 @@ export interface Member {
   complement?: string;
   maritalStatus?: string;
   spouseId?: string | null;
+  pastorId?: string;
   login?: string;
   password?: string;
 }
@@ -127,6 +130,15 @@ export interface PrayerRequest {
   targetName?: string;
   showOnScreen: boolean;
   requestPastoralCall: boolean;
+  addressDetails?: {
+    cep: string;
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+  };
 }
 
 export interface ChurchTenant {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -13,6 +13,7 @@ import {
   UserCog,
   ShieldAlert,
   User,
+  UserPlus,
   Users,
   LayoutDashboard,
   LogOut,
@@ -33,7 +34,10 @@ import {
   MOCK_TENANT,
   MOCK_CURRENT_USER
 } from './constants';
-import { UserRole } from './types';
+import { UserRole, PrayerStatus } from './types';
+import { supabase } from './services/supabaseClient';
+import { prayerService } from './services/prayerService';
+import { memberService } from './services/memberService';
 import Dashboard from './components/Dashboard';
 import Members from './components/Members';
 import Cells from './components/Cells';
@@ -48,6 +52,7 @@ import PrayerForm from './components/Prayer/PrayerForm';
 import PrayerScreen from './components/Prayer/PrayerScreen';
 import PrayerModeration from './components/Prayer/PrayerModeration';
 import LandingPage from './components/Marketing/LandingPage';
+import PublicRegistration from './components/Marketing/PublicRegistration';
 import Settings from './components/Settings';
 
 const RoleSwitcher = ({ currentRole, onSwitch }: { currentRole: UserRole, onSwitch: (role: UserRole) => void }) => {
@@ -92,6 +97,14 @@ const RoleSwitcher = ({ currentRole, onSwitch }: { currentRole: UserRole, onSwit
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold text-indigo-400 hover:bg-indigo-500/10 transition-all"
           >
             <Monitor size={14} /> Telão de Clamor
+          </button>
+          <div className="h-px bg-white/5 my-3 mx-2" />
+          <p className="text-[10px] font-bold text-zinc-500 uppercase px-4 py-2 tracking-widest">Acesso de Membros</p>
+          <button
+            onClick={() => { navigate('/cadastro/mircentrosul'); setIsOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 transition-all"
+          >
+            <UserPlus size={14} /> Cadastro Público
           </button>
         </div>
       )}
@@ -174,9 +187,15 @@ const Sidebar = ({ isOpen, toggle, user }: { isOpen: boolean, toggle: () => void
     case UserRole.CHURCH_ADMIN:
     case UserRole.PASTOR: navItems = PASTOR_NAV_ITEMS; break;
     case UserRole.CELL_LEADER_DISCIPLE: navItems = LEADER_NAV_ITEMS; break;
-    case UserRole.MEMBER_VISITOR: navItems = MEMBER_NAV_ITEMS; break;
     default: navItems = MEMBER_NAV_ITEMS;
   }
+
+  // Perfil mestre para o Master Admin
+  const activeUser = role === UserRole.MASTER_ADMIN ? {
+    ...user,
+    name: 'AGÊNCIA GOODEA',
+    avatar: 'https://ui-avatars.com/api/?name=Agencia+Goodea&background=2563eb&color=fff&size=200'
+  } : user;
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-zinc-900 border-r border-white/5 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -221,13 +240,13 @@ const Sidebar = ({ isOpen, toggle, user }: { isOpen: boolean, toggle: () => void
         <div className="p-6 border-t border-white/5 space-y-4">
           <div onClick={() => navigate('/')} className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-rose-500/10 cursor-pointer transition-all group text-zinc-400 hover:text-rose-400">
             <LogOut size={20} />
-            <span className="text-sm font-bold">Encerrar Sessão</span>
+            <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Encerrar Sessão</span>
           </div>
-          <div className="flex items-center gap-4 p-4 rounded-3xl bg-zinc-950 border border-white/5 shadow-inner">
-            <img src={user.avatar} className="w-11 h-11 rounded-2xl ring-2 ring-white/10 shadow-lg object-cover" alt="" />
-            <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-black text-white truncate uppercase tracking-tight">{user.name}</p>
-              <p className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mt-0.5">{user.role}</p>
+          <div className="flex items-center gap-4 p-4 rounded-3xl bg-zinc-950 border border-white/5 shadow-inner group cursor-pointer hover:border-blue-500/30 transition-all" onClick={() => navigate('/app/settings')}>
+            <img src={activeUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUser.name)}&background=2563eb&color=fff&size=200`} className="w-11 h-11 rounded-2xl ring-2 ring-white/10 shadow-lg object-cover" alt="" />
+            <div className="flex-1 overflow-hidden font-black uppercase">
+              <p className="text-[11px] text-white truncate tracking-tighter uppercase">{activeUser.name}</p>
+              <p className="text-[8px] text-zinc-500 tracking-widest mt-0.5">{activeUser.role}</p>
             </div>
           </div>
         </div>
@@ -236,61 +255,207 @@ const Sidebar = ({ isOpen, toggle, user }: { isOpen: boolean, toggle: () => void
   );
 };
 
-const Header = ({ user, onMenuToggle }: { user: any, onMenuToggle: () => void }) => (
-  <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-8 py-5 flex items-center justify-between">
-    <div className="flex items-center gap-6">
-      <button onClick={onMenuToggle} className="lg:hidden p-2.5 text-zinc-400 hover:bg-white/5 rounded-xl transition-all">
-        <Menu size={24} />
-      </button>
-      <div className="hidden md:flex items-center gap-3 bg-zinc-900 px-5 py-2.5 rounded-2xl border border-white/5 focus-within:ring-2 focus-within:ring-blue-600 focus-within:bg-zinc-800 transition-all group w-80">
-        <Search size={18} className="text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
-        <input type="text" placeholder="Busca inteligente..." className="bg-transparent border-none outline-none text-sm w-full font-medium text-zinc-200" />
+const Header = ({ user, onMenuToggle, notificationsCount = 0 }: { user: any, onMenuToggle: () => void, notificationsCount?: number }) => {
+  const isMaster = user.role === UserRole.MASTER_ADMIN;
+  const activeUser = isMaster ? {
+    ...user,
+    name: 'AGÊNCIA GOODEA',
+    avatar: 'https://ui-avatars.com/api/?name=Agencia+Goodea&background=2563eb&color=fff&size=200'
+  } : user;
+
+  return (
+    <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 px-8 py-5 flex items-center justify-between">
+      <div className="flex items-center gap-6">
+        <button onClick={onMenuToggle} className="lg:hidden p-2.5 text-zinc-400 hover:bg-white/5 rounded-xl transition-all">
+          <Menu size={24} />
+        </button>
+        <div className="hidden md:flex items-center gap-3 bg-zinc-900 px-5 py-2.5 rounded-2xl border border-white/5 focus-within:ring-2 focus-within:ring-blue-600 focus-within:bg-zinc-800 transition-all group w-80">
+          <Search size={18} className="text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
+          <input type="text" placeholder="Busca inteligente..." className="bg-transparent border-none outline-none text-sm w-full font-medium text-zinc-200" />
+        </div>
       </div>
-    </div>
-    <div className="flex items-center gap-6">
-      <button className="relative p-2.5 text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-all">
-        <Bell size={22} />
-        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-600 rounded-full border-2 border-zinc-950 shadow-lg shadow-blue-500/50"></span>
-      </button>
-      <div className="h-8 w-px bg-white/5"></div>
-      <QuickActionsMenu user={user} />
-    </div>
-  </header>
-);
+
+      <div className="flex items-center gap-6">
+        <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-2xl border border-white/5">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none pt-0.5">SaaS Online</span>
+        </div>
+
+        <div className="flex items-center gap-4 border-l border-white/5 pl-6">
+          <button className="relative p-2.5 text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
+            <Bell size={20} />
+            {notificationsCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-blue-600 text-white text-[9px] font-black border-2 border-zinc-950 rounded-full flex items-center justify-center animate-bounce">
+                {notificationsCount}
+              </span>
+            )}
+          </button>
+
+          <QuickActionsMenu user={user} />
+
+          <div className="w-px h-8 bg-white/5 mx-2" />
+
+          <div className="flex items-center gap-4 group cursor-pointer">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-black text-white uppercase tracking-tight group-hover:text-blue-500 transition-colors">{activeUser.name}</p>
+              <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-0.5">{activeUser.role}</p>
+            </div>
+            <img src={activeUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUser.name)}&background=2563eb&color=fff&size=200`} className="w-10 h-10 rounded-xl ring-2 ring-white/10 group-hover:ring-blue-500/50 transition-all object-cover" alt="" />
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(MOCK_CURRENT_USER);
+  const [pendingPrayersCount, setPendingPrayersCount] = useState(0);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // Sincronizar dados do usuário inicial com o banco
+    const fetchAdminProfile = async () => {
+      if (currentUser.role === UserRole.CHURCH_ADMIN || currentUser.email === 'arao@mircentrosul.com') {
+        try {
+          const membersList = await memberService.getAll(MOCK_TENANT.id);
+          const realProfile = membersList.find(m => m.email === 'arao@mircentrosul.com') || membersList.find(m => m.role === UserRole.CHURCH_ADMIN);
+          if (realProfile) {
+            setCurrentUser(prev => ({
+              ...prev,
+              name: realProfile.name,
+              avatar: realProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(realProfile.name)}&background=2563eb&color=fff&size=200`,
+              email: realProfile.email
+            }));
+          }
+        } catch (e) {
+          console.error("Erro ao buscar a foto atualizada em App.tsx", e);
+        }
+      }
+    };
+    fetchAdminProfile();
+  }, [currentUser.role]);
+
+  const loadPendingCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('prayers')
+        .select('*', { count: 'exact', head: true })
+        .eq('church_id', MOCK_TENANT.id)
+        .eq('status', PrayerStatus.PENDING);
+
+      if (!error) setPendingPrayersCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao buscar total de pendentes:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadPendingCount();
+
+    const subscription = prayerService.subscribeToPrayers((payload) => {
+      console.log('Realtime Evento Global (Badge/Som):', payload.eventType);
+
+      if (payload.eventType === 'INSERT') {
+        // Tocar som em qualquer lugar da aplicação
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.log('Erro ao tocar som no App:', e));
+        }
+      }
+
+      loadPendingCount();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const switchRole = (role: UserRole) => {
-    setCurrentUser({ ...currentUser, role: role, name: role.toString(), avatar: `https://i.pravatar.cc/150?u=${role}` });
+    if (role === UserRole.MASTER_ADMIN) {
+      setCurrentUser({
+        name: 'Agência Goodea',
+        role: role,
+        email: 'contato@agenciagoodea.com',
+        phone: '(92) 99519-1467',
+        avatar: 'https://ui-avatars.com/api/?name=Agencia+Goodea&background=2563eb&color=fff&rounded=true'
+      });
+    } else if (role === UserRole.CHURCH_ADMIN) {
+      setCurrentUser({
+        name: 'Arão',
+        role: role,
+        email: 'arao@mircentrosul.com',
+        avatar: 'https://i.pravatar.cc/150?u=arao_mir'
+      });
+    } else if (role === UserRole.PASTOR) {
+      setCurrentUser({
+        name: 'Pr. André Lourenço',
+        role: role,
+        email: 'pastor@mircentrosul.com',
+        avatar: 'https://i.pravatar.cc/150?u=pastor_andre'
+      });
+    } else {
+      setCurrentUser({ ...currentUser, role: role, name: role.toString().replace(/_/g, ' '), avatar: `https://i.pravatar.cc/150?u=${role}` });
+    }
   };
 
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/prayer/new/:slug" element={<PrayerForm />} />
+        <Route path="/prayer-screen/:slug" element={<PrayerScreen />} />
+        <Route path="/cadastro/:slug" element={<PublicRegistration />} />
+        {/* Fallbacks sem slug para compatibilidade temporária */}
         <Route path="/prayer/new" element={<PrayerForm />} />
         <Route path="/prayer-screen" element={<PrayerScreen />} />
+        <Route path="/cadastro" element={<PublicRegistration />} />
 
         <Route path="/app/*" element={
           <div className="min-h-screen bg-zinc-950 flex">
             <Sidebar isOpen={sidebarOpen} toggle={() => setSidebarOpen(!sidebarOpen)} user={currentUser} />
             <main className="flex-1 lg:ml-72 flex flex-col min-h-screen">
-              <Header user={currentUser} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-              <div className="p-8 md:p-12 max-w-7xl mx-auto w-full">
+              <Header user={currentUser} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} notificationsCount={pendingPrayersCount} />
+              <div className="p-4 sm:p-6 md:p-10 max-w-7xl mx-auto w-full">
                 <Routes>
                   <Route path="/" element={<Dashboard user={currentUser} />} />
-                  <Route path="/members" element={<Members />} />
-                  <Route path="/cells" element={<Cells />} />
-                  <Route path="/ladder" element={<SuccessLadder />} />
-                  <Route path="/prayer-moderation" element={<PrayerModeration />} />
-                  <Route path="/finance" element={<Finance />} />
-                  <Route path="/ia-insights" element={<IAInsights />} />
-                  <Route path="/churches" element={<ChurchesManager />} />
-                  <Route path="/plans" element={<PlansManager />} />
-                  <Route path="/security" element={<SecurityAudit />} />
-                  <Route path="/settings" element={<Settings />} />
+
+                  {/* Rotas Administrativas de Igreja */}
+                  {(currentUser.role === UserRole.MASTER_ADMIN || currentUser.role === UserRole.CHURCH_ADMIN || currentUser.role === UserRole.PASTOR) && (
+                    <>
+                      <Route path="/members" element={<Members />} />
+                      <Route path="/prayer-moderation" element={<PrayerModeration />} />
+                    </>
+                  )}
+
+                  {/* Rotas de Célula (Líderes, Pastores e Admins) */}
+                  {currentUser.role !== UserRole.MEMBER_VISITOR && (
+                    <>
+                      <Route path="/cells" element={<Cells />} />
+                      <Route path="/ladder" element={<SuccessLadder />} />
+                      <Route path="/ia-insights" element={<IAInsights />} />
+                    </>
+                  )}
+
+                  {/* Rotas Financeiras e Configurações (Apenas Admins e Master) */}
+                  {(currentUser.role === UserRole.MASTER_ADMIN || currentUser.role === UserRole.CHURCH_ADMIN) && (
+                    <Route path="/finance" element={<Finance />} />
+                  )}
+
+                  {/* Rotas de Master Admin (SaaS Global) */}
+                  {currentUser.role === UserRole.MASTER_ADMIN && (
+                    <>
+                      <Route path="/churches" element={<ChurchesManager />} />
+                      <Route path="/plans" element={<PlansManager />} />
+                      <Route path="/security" element={<SecurityAudit />} />
+                    </>
+                  )}
+
+                  <Route path="/settings" element={<Settings user={currentUser} />} />
+
+                  {/* Fallback para Dashboard se tentar acessar algo não permitido */}
+                  <Route path="*" element={<Dashboard user={currentUser} />} />
                 </Routes>
               </div>
             </main>
@@ -299,6 +464,7 @@ const App: React.FC = () => {
           </div>
         } />
       </Routes>
+      <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto" />
     </Router>
   );
 };

@@ -1,10 +1,13 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Heart, Camera, ShieldCheck, CheckCircle2, User, UserPlus, Eye, EyeOff, Phone, Mail, MessageSquare, ChevronLeft, Monitor, X } from 'lucide-react';
+import { Send, Heart, Camera, ShieldCheck, CheckCircle2, User, UserPlus, Eye, EyeOff, Phone, Mail, MessageSquare, ChevronLeft, Monitor, X, Loader2 } from 'lucide-react';
 import { MOCK_TENANT } from '../../constants';
-import { PrayerStatus } from '../../types';
+import { PrayerStatus, ChurchTenant } from '../../types';
 import { prayerService } from '../../services/prayerService';
+import { churchService } from '../../services/churchService';
+import { useParams } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 
 const Switch = ({ active, onChange }: { active: boolean; onChange: () => void }) => (
   <div
@@ -19,8 +22,12 @@ const Switch = ({ active, onChange }: { active: boolean; onChange: () => void })
 
 const PrayerForm: React.FC = () => {
   const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tenant, setTenant] = useState<ChurchTenant | null>(null);
+  const [loadingCep, setLoadingCep] = useState(false);
   const [progress, setProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>('');
@@ -36,8 +43,67 @@ const PrayerForm: React.FC = () => {
     targetPerson: 'SELF' as 'SELF' | 'OTHER',
     targetName: '',
     showOnScreen: true,
-    requestPastoralCall: false
+    requestPastoralCall: false,
+    addressDetails: {
+      cep: '',
+      street: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: ''
+    }
   });
+
+  React.useEffect(() => {
+    const loadTenant = async () => {
+      try {
+        if (slug) {
+          const data = await churchService.getBySlug(slug).catch(() => null);
+          setTenant(data);
+        }
+
+        // Se sem slug ou falhar, busca a primeira do banco
+        if (!tenant) {
+          const data = await churchService.getFirst().catch(() => MOCK_TENANT);
+          setTenant(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar igreja:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTenant();
+  }, [slug]);
+
+  const handleCepBlur = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (!data.erro) {
+        setFormData(prev => ({
+          ...prev,
+          addressDetails: {
+            ...prev.addressDetails!,
+            street: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    } finally {
+      setLoadingCep(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,7 +145,7 @@ const PrayerForm: React.FC = () => {
       }
 
       await prayerService.create({
-        church_id: MOCK_TENANT.id,
+        church_id: tenant?.id || MOCK_TENANT.id,
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
@@ -92,6 +158,7 @@ const PrayerForm: React.FC = () => {
         targetName: formData.targetName,
         showOnScreen: formData.showOnScreen,
         requestPastoralCall: formData.requestPastoralCall,
+        addressDetails: formData.addressDetails,
         createdAt: new Date().toISOString()
       });
 
@@ -139,6 +206,14 @@ const PrayerForm: React.FC = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 size={48} className="text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center py-20 px-6 relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/10 rounded-full blur-[150px] -z-10" />
@@ -178,9 +253,9 @@ const PrayerForm: React.FC = () => {
 
       <div className="w-full max-w-2xl relative z-10">
         <div className="text-center mb-16">
-          <img src={MOCK_TENANT.logo} className="w-24 h-24 rounded-3xl mx-auto mb-8 shadow-2xl object-contain bg-zinc-900 p-3 border border-white/10" alt="" />
-          <h1 className="text-5xl font-black text-white mb-3 tracking-tighter uppercase leading-none text-center">Canal de Fé</h1>
-          <p className="text-zinc-500 font-bold italic text-lg text-center">Central de Pedidos de Clamor — {MOCK_TENANT.name}</p>
+          <img src={tenant?.logo || MOCK_TENANT.logo} className="w-24 h-24 rounded-3xl mx-auto mb-8 shadow-2xl object-contain bg-zinc-900 p-3 border border-white/10" alt="" />
+          <h1 className="text-5xl font-black text-white mb-3 tracking-tighter uppercase leading-none text-center">Clamor Coletivo</h1>
+          <p className="text-zinc-500 font-bold italic text-lg text-center">Central de Pedidos de Clamor — {tenant?.name || MOCK_TENANT.name}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-zinc-900 p-10 md:p-16 rounded-[4rem] border border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.5)] space-y-12">
@@ -283,6 +358,72 @@ const PrayerForm: React.FC = () => {
                 </div>
                 <Switch active={formData.requestPastoralCall} onChange={() => setFormData({ ...formData, requestPastoralCall: !formData.requestPastoralCall })} />
               </div>
+
+              {formData.requestPastoralCall && (
+                <div className="space-y-6 pt-6 animate-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center gap-4 text-indigo-400 font-black text-[10px] uppercase tracking-[0.3em]">
+                    <div className="w-8 h-px bg-indigo-500/30" />
+                    <span className="flex items-center gap-2"><MapPin size={14} /> Localização para Acompanhamento</span>
+                    <div className="w-full h-px bg-indigo-500/30 flex-1" />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">CEP</label>
+                      <div className="relative">
+                        <input
+                          value={formData.addressDetails?.cep}
+                          onChange={e => setFormData({ ...formData, addressDetails: { ...formData.addressDetails!, cep: e.target.value } })}
+                          onBlur={e => handleCepBlur(e.target.value)}
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                          placeholder="00000-000"
+                        />
+                        {loadingCep && <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-indigo-500" />}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Bairro</label>
+                      <input
+                        value={formData.addressDetails?.neighborhood}
+                        onChange={e => setFormData({ ...formData, addressDetails: { ...formData.addressDetails!, neighborhood: e.target.value } })}
+                        className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none"
+                        placeholder="Nome do bairro"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Logradouro (Rua/Avenida)</label>
+                    <input
+                      value={formData.addressDetails?.street}
+                      onChange={e => setFormData({ ...formData, addressDetails: { ...formData.addressDetails!, street: e.target.value } })}
+                      className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none"
+                      placeholder="Rua, número, etc."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Cidade</label>
+                      <input
+                        value={formData.addressDetails?.city}
+                        onChange={e => setFormData({ ...formData, addressDetails: { ...formData.addressDetails!, city: e.target.value } })}
+                        className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none"
+                        placeholder="Cidade"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Estado</label>
+                      <input
+                        value={formData.addressDetails?.state}
+                        onChange={e => setFormData({ ...formData, addressDetails: { ...formData.addressDetails!, state: e.target.value } })}
+                        className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white outline-none"
+                        placeholder="UF"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

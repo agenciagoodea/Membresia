@@ -21,7 +21,7 @@ const mapToFrontend = (c: any): ChurchTenant => ({
 
 const mapToDb = (c: Partial<ChurchTenant>) => {
 	const db: any = {};
-	if (c.id) db.id = c.id;
+	// NUNCA enviar id no payload de update/insert se ele for PK auto-gerado ou já passado no filtro
 	if (c.name !== undefined) db.name = c.name;
 	if (c.slug !== undefined) db.slug = c.slug;
 	if (c.logo !== undefined) db.logo = c.logo;
@@ -40,11 +40,52 @@ const mapToDb = (c: Partial<ChurchTenant>) => {
 };
 
 export const churchService = {
+	async list() {
+		const { data, error } = await supabase
+			.from('churches')
+			.select('*')
+			.order('name');
+
+		if (error) throw error;
+
+		const churches = data || [];
+
+		// Buscar estatísticas reais para cada igreja
+		const churchesWithStats = await Promise.all(churches.map(async (church) => {
+			const [membersCount, cellsCount] = await Promise.all([
+				supabase.from('members').select('*', { count: 'exact', head: true }).eq('church_id', church.id),
+				supabase.from('cells').select('*', { count: 'exact', head: true }).eq('church_id', church.id)
+			]);
+
+			return mapToFrontend({
+				...church,
+				stats: {
+					totalMembers: membersCount.count || 0,
+					activeCells: cellsCount.count || 0,
+					monthlyGrowth: 0
+				}
+			});
+		}));
+
+		return churchesWithStats;
+	},
+
 	async getBySlug(slug: string) {
 		const { data, error } = await supabase
 			.from('churches')
 			.select('*')
 			.eq('slug', slug)
+			.single();
+
+		if (error) throw error;
+		return mapToFrontend(data);
+	},
+
+	async getFirst() {
+		const { data, error } = await supabase
+			.from('churches')
+			.select('*')
+			.limit(1)
 			.single();
 
 		if (error) throw error;
@@ -57,6 +98,18 @@ export const churchService = {
 			.from('churches')
 			.update(dbData)
 			.eq('id', id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return mapToFrontend(data);
+	},
+
+	async create(church: Partial<ChurchTenant>) {
+		const dbData = mapToDb(church);
+		const { data, error } = await supabase
+			.from('churches')
+			.insert([dbData])
 			.select()
 			.single();
 

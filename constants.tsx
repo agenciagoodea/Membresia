@@ -93,13 +93,14 @@ export const MEMBER_NAV_ITEMS = [
 export const MOCK_CHURCHES: ChurchTenant[] = [
   {
     id: '779bc274-eab3-489e-a947-d4b0d39ed6ea',
-    name: 'Igreja Vida Nova',
-    slug: 'vida-nova',
-    logo: 'https://picsum.photos/200/200?random=1',
+    name: 'Ministério da Restauração - MIR Centro-Sul',
+    slug: 'mircentrosul',
+    logo: 'https://vXWU8FgB8oYRt.supabase.co/storage/v1/object/public/logos/mir-logo.png',
+    cnpj: '26306700000100',
     status: ChurchStatus.ACTIVE,
-    plan: PlanType.PRO,
-    primaryColor: '#2563eb',
-    secondaryColor: '#1e40af',
+    plan: PlanType.ENTERPRISE,
+    primaryColor: '#0047AB',
+    secondaryColor: '#FFD700',
     createdAt: '2023-01-10',
     stats: { totalMembers: 0, activeCells: 0, monthlyGrowth: 0 }
   }
@@ -108,9 +109,10 @@ export const MOCK_CHURCHES: ChurchTenant[] = [
 export const MOCK_TENANT = MOCK_CHURCHES[0];
 
 export const MOCK_CURRENT_USER = {
-  name: 'Pr. André Lourenço',
-  role: UserRole.PASTOR,
-  avatar: 'https://i.pravatar.cc/150?u=pastor_andre'
+  name: 'Ap. Arão Amazonas',
+  email: 'arao@mircentrosul.com',
+  role: UserRole.CHURCH_ADMIN,
+  avatar: 'https://i.pravatar.cc/150?u=arao_mir'
 };
 
 export const MOCK_MEMBERS: Member[] = [
@@ -212,6 +214,7 @@ export const MOCK_MEETING_REPORTS: MeetingReport[] = [
     visitorCount: 2,
     childrenCount: 0,
     offeringAmount: 150.00,
+    childrenCount: 0,
     report: 'Reunião abençoada com muito louvor e uma palavra sobre fé.',
     recordedBy: 'João Silva'
   }

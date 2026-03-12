@@ -39,14 +39,8 @@ import { cellService } from '../services/cellService';
 import { memberService } from '../services/memberService';
 import { meetingReportService } from '../services/meetingReportService';
 import CellModal from './CellModal';
-
-const STAGE_ACTIVITIES: Record<LadderStage, string[]> = {
-  [LadderStage.WIN]: ['Sistema de Oração', 'Evangelismo', 'Visita de Célula', 'Outra Igreja'],
-  [LadderStage.CONSOLIDATE]: ['Batismo', 'Aclamado', 'Célula', 'Encontro com Deus'],
-  [LadderStage.DISCIPLE]: ['Serviços Eclesiásticos', 'Escola de Líderes', 'Escola Bíblica do Reino', 'Cosmo Visões', 'Guerra Espiritual'],
-  [LadderStage.SEND]: ['Multiplicação', 'Mentoria']
-};
-
+import PageHeader from './Shared/PageHeader';
+import { STAGE_ACTIVITIES, isStageComplete, getMissingMilestones } from '../utils/ladderUtils';
 const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onBack: () => void, members: Member[] }) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [membersList, setMembersList] = useState<Member[]>(allMembers);
@@ -170,6 +164,7 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
     }
   };
 
+<<<<<<< HEAD
   const isStageComplete = (member: Member) => {
     if (member.stage === LadderStage.WIN) {
       const validOrigins = [MemberOrigin.PRAYER_REQUEST, MemberOrigin.EVANGELISM, MemberOrigin.CELL_VISIT, MemberOrigin.OTHER_CHURCH];
@@ -194,6 +189,8 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
       return completed.includes(activity);
     });
   };
+=======
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
   const handleToggleMilestone = async (member: Member, milestone: string) => {
     if (member.stage === LadderStage.WIN && member.origin === MemberOrigin.PRAYER_REQUEST) {
@@ -224,15 +221,19 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
   };
 
   const handleAdvance = async (member: Member) => {
+<<<<<<< HEAD
     const required = STAGE_ACTIVITIES[member.stage] || [];
     const completed = member.completedMilestones || [];
 
+=======
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
     if (member.stage === LadderStage.WIN) {
       if (!isStageComplete(member)) {
         alert("Para avançar de nível, informe pelo menos uma opção de como o discípulo foi ganho.");
         return;
       }
     } else {
+<<<<<<< HEAD
       let missing = required.filter(activity => {
         if (activity === 'Célula' && member.cellId) return false;
         return !completed.includes(activity);
@@ -245,6 +246,9 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
         }
       }
 
+=======
+      const missing = getMissingMilestones(member);
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
       if (missing.length > 0) {
         alert(`Para avançar de nível, complete primeiro:\n\n• ${missing.join('\n• ')}`);
         return;
@@ -307,13 +311,13 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
   };
 
   return (
-    <div className="space-y-10 animate-in slide-in-from-right-10 duration-500">
-      <div className="flex items-center gap-6">
-        <button onClick={onBack} className="p-4 bg-zinc-900 border border-white/5 rounded-2xl hover:bg-zinc-800 transition-all text-zinc-400 hover:text-white shadow-xl">
+    <div className="space-y-6 md:space-y-10 animate-in slide-in-from-right-10 duration-500">
+      <div className="flex flex-col md:flex-row md:items-center gap-6 mb-2">
+        <button onClick={onBack} className="p-3 md:p-4 bg-zinc-900 border border-white/5 rounded-2xl hover:bg-zinc-800 transition-all text-zinc-400 hover:text-white shadow-xl self-start md:self-auto">
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase leading-none mb-1">{cell.name}</h2>
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none mb-1">{cell.name}</h2>
           <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] italic">Gestão Analítica & Cuidado Espiritual</p>
         </div>
       </div>
@@ -600,9 +604,20 @@ const CellDetailView = ({ cell, onBack, members: allMembers }: { cell: Cell, onB
                 <textarea name="report" required rows={4} defaultValue={isEditingReport && selectedReport ? selectedReport.report : ''} placeholder="Como foi o mover de Deus?" className="w-full bg-zinc-950 border border-white/5 rounded-2xl px-6 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-600 text-white font-medium resize-none"></textarea>
               </div>
 
-              <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
-                <MessageSquare size={20} /> SALVAR RELATÓRIO
-              </button>
+              <div className="flex gap-4">
+                {isEditingReport && selectedReport && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteReport(selectedReport.id)}
+                    className="flex-2 px-6 py-5 bg-rose-600/10 text-rose-500 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-rose-600/20 transition-all flex items-center justify-center gap-3 border border-rose-500/20"
+                  >
+                    <Trash2 size={20} /> EXCLUIR
+                  </button>
+                )}
+                <button type="submit" className="flex-1 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
+                  <MessageSquare size={20} /> {isEditingReport ? 'ATUALIZAR' : 'SALVAR'} RELATÓRIO
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -786,6 +801,7 @@ const Cells: React.FC = () => {
   }
 
   return (
+<<<<<<< HEAD
     <div className="space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
@@ -805,6 +821,25 @@ const Cells: React.FC = () => {
           Nova Célula
         </button>
       </div>
+=======
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title="Comunidades de Fé"
+        subtitle={`Monitorando ${currentTotal} de ${planLimit} células.`}
+        actions={
+          <button
+            onClick={handleAddCell}
+            className={`flex items-center gap-3 px-6 md:px-8 py-3 md:py-4 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-[0.1em] transition-all shadow-xl w-full md:w-auto justify-center ${isLimitReached
+              ? 'bg-zinc-800 text-zinc-500 border border-white/5 cursor-not-allowed opacity-50'
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
+              }`}
+          >
+            {isLimitReached ? <Lock size={18} /> : <Plus size={18} />}
+            Nova Unidade
+          </button>
+        }
+      />
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {cells.map((cell) => (
@@ -813,9 +848,35 @@ const Cells: React.FC = () => {
             onClick={() => setSelectedCell(cell)}
             className="group bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl hover:bg-zinc-800 transition-all cursor-pointer relative overflow-hidden"
           >
+<<<<<<< HEAD
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
               <Layers size={100} />
             </div>
+=======
+            <div className="p-10 flex-1">
+              <div className="flex justify-between items-start mb-10">
+                <div className={`w-14 h-14 ${cell.logo ? 'bg-transparent shadow-none border border-white/10' : (cell.status === 'MULTIPLYING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500')} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl overflow-hidden`}>
+                  {cell.logo ? (
+                    <img src={cell.logo} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <Users size={28} />
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={(e) => handleEditCell(e, cell)} className="p-2 text-zinc-600 hover:text-blue-400 bg-white/5 rounded-xl border border-white/5 transition-all">
+                    <Edit2 size={16} />
+                  </button>
+                  <button onClick={(e) => handleDeleteCell(e, cell.id)} className="p-2 text-zinc-600 hover:text-rose-500 bg-white/5 rounded-xl border border-white/5 transition-all">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+              <h3 className="font-black text-white text-2xl mb-2 uppercase tracking-tight">{cell.name}</h3>
+              <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-10 italic">
+                <User size={14} className="text-zinc-600" />
+                Líder: {getLeaderName(cell.leaderId)}
+              </div>
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
             <div className="flex justify-between items-start mb-8 relative z-10">
               <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center border border-blue-500/20 text-blue-500 group-hover:scale-110 transition-transform">

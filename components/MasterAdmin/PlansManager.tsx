@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  CreditCard, 
-  Zap, 
-  Users, 
-  Layers, 
-  CheckCircle2, 
-  Settings, 
+import {
+  CreditCard,
+  Zap,
+  Users,
+  Layers,
+  CheckCircle2,
+  Settings,
   Plus,
   DollarSign,
   TrendingUp,
@@ -15,10 +15,12 @@ import {
   Save,
   ShieldCheck,
   Crown,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { PlanType, PlanLimits } from '../../types';
-import { PLAN_CONFIGS } from '../../constants';
+import { planService } from '../../services/planService';
+import PageHeader from '../Shared/PageHeader';
 
 const FEATURE_OPTIONS = [
   { id: 'DASHBOARD', label: 'Painéis Analíticos' },
@@ -31,21 +33,20 @@ const FEATURE_OPTIONS = [
   { id: 'WHITE_LABEL', label: 'White Label Personalizado' }
 ];
 
-const PlanModal = ({ 
-  isOpen, 
-  onClose, 
-  planType, 
-  config, 
-  onSave 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  planType?: string | null; 
-  config?: PlanLimits | null; 
-  onSave: (type: string, data: PlanLimits) => void; 
+const PlanModal = ({
+  isOpen,
+  onClose,
+  plan,
+  onSave
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  plan?: any | null;
+  onSave: (data: any) => Promise<void>;
 }) => {
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<any>({
-    type: '',
+    name: '',
     price: 0,
     maxMembers: 0,
     maxCells: 0,
@@ -54,14 +55,19 @@ const PlanModal = ({
   });
 
   useEffect(() => {
-    if (planType && config) {
+    if (plan) {
       setFormData({
-        type: planType,
-        ...config
+        id: plan.id,
+        name: plan.name,
+        price: plan.price,
+        maxMembers: plan.maxMembers,
+        maxCells: plan.maxCells,
+        maxLeaders: plan.maxLeaders,
+        features: plan.features || []
       });
     } else {
       setFormData({
-        type: '',
+        name: '',
         price: 0,
         maxMembers: 100,
         maxCells: 10,
@@ -69,7 +75,7 @@ const PlanModal = ({
         features: ['DASHBOARD', 'MEMBERS']
       });
     }
-  }, [planType, config, isOpen]);
+  }, [plan, isOpen]);
 
   if (!isOpen) return null;
 
@@ -82,47 +88,60 @@ const PlanModal = ({
     }));
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar plano:', error);
+      alert('Falha ao salvar o SKU.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-        
+      <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-zinc-950 w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border border-white/10">
+
         {/* Header */}
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-8 border-b border-white/5 flex items-center justify-between bg-zinc-900/50">
           <div>
-            <h3 className="text-xl font-bold text-slate-800">{planType ? `Editar SKU: ${planType}` : 'Criar Novo Plano SaaS'}</h3>
-            <p className="text-sm text-slate-500 font-medium">Defina limites, preços e funcionalidades do pacote.</p>
+            <h3 className="text-xl font-bold text-zinc-100">{plan ? `Editar SKU: ${plan.name}` : 'Criar Novo Plano SaaS'}</h3>
+            <p className="text-sm text-zinc-400 font-medium">Defina limites, preços e funcionalidades do pacote.</p>
           </div>
-          <button onClick={onClose} className="p-3 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-200 shadow-sm">
-            <X size={20} className="text-slate-400" />
+          <button onClick={onClose} className="p-3 hover:bg-zinc-900 rounded-full transition-all border border-transparent hover:border-white/10 shadow-sm">
+            <X size={20} className="text-zinc-500" />
           </button>
         </div>
 
         {/* Body */}
-        <form className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide" onSubmit={(e) => { e.preventDefault(); onSave(formData.type, formData); }}>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Identificador do Plano (SKU)</label>
-              <input 
+        <form className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide" onSubmit={handleSubmit}>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Identificador (SKU)</label>
+              <input
                 required
-                value={formData.type}
-                onChange={e => setFormData({...formData, type: e.target.value.toUpperCase()})}
-                disabled={!!planType}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold disabled:opacity-50" 
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                className="w-full bg-zinc-900 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black placeholder:text-zinc-700"
                 placeholder="Ex: PREMIUM"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Preço Mensal (BRL)</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Preço Mensal (BRL)</label>
               <div className="relative">
-                <DollarSign className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input 
+                <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+                <input
                   type="number"
                   required
                   value={formData.price}
-                  onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-emerald-100 transition-all font-bold" 
+                  onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all font-black"
                   placeholder="0.00"
                 />
               </div>
@@ -130,63 +149,61 @@ const PlanModal = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Limite de Membros</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Limite Membros</label>
               <div className="relative">
-                <Users className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input 
+                <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                <input
                   type="number"
                   value={formData.maxMembers}
-                  onChange={e => setFormData({...formData, maxMembers: Number(e.target.value)})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" 
+                  onChange={e => setFormData({ ...formData, maxMembers: Number(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-bold"
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Limite de Células</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Limite Células</label>
               <div className="relative">
-                <Layers className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input 
+                <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                <input
                   type="number"
                   value={formData.maxCells}
-                  onChange={e => setFormData({...formData, maxCells: Number(e.target.value)})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" 
+                  onChange={e => setFormData({ ...formData, maxCells: Number(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-bold"
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Líderes Ativos</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Líderes Ativos</label>
               <div className="relative">
-                <ShieldCheck className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input 
+                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                <input
                   type="number"
                   value={formData.maxLeaders}
-                  onChange={e => setFormData({...formData, maxLeaders: Number(e.target.value)})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" 
+                  onChange={e => setFormData({ ...formData, maxLeaders: Number(e.target.value) })}
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-bold"
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Recursos Habilitados</label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2 block italic">Funcionalidades Habilitadas</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {FEATURE_OPTIONS.map((feature) => (
-                <div 
+                <div
                   key={feature.id}
                   onClick={() => toggleFeature(feature.id)}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
-                    formData.features.includes(feature.id) 
-                    ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                    : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
-                  }`}
+                  className={`flex items-center gap-4 p-5 rounded-2xl border transition-all ${formData.features.includes(feature.id)
+                    ? 'bg-blue-600/10 border-blue-500/50 text-white shadow-lg shadow-blue-500\/5'
+                    : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:border-white/10'
+                    } cursor-pointer group`}
                 >
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${
-                    formData.features.includes(feature.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-200'
-                  }`}>
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${formData.features.includes(feature.id) ? 'bg-blue-600 border-blue-600' : 'bg-zinc-950 border-white/10 group-hover:border-zinc-700'
+                    }`}>
                     {formData.features.includes(feature.id) && <CheckCircle2 size={14} className="text-white" />}
                   </div>
-                  <span className="text-sm font-bold">{feature.label}</span>
+                  <span className="text-sm font-bold tracking-tight">{feature.label}</span>
                 </div>
               ))}
             </div>
@@ -194,12 +211,17 @@ const PlanModal = ({
         </form>
 
         {/* Footer */}
-        <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
-          <button type="button" onClick={onClose} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-sm font-bold hover:bg-slate-100 transition-all">
-            Descartar
+        <div className="p-8 border-t border-white/5 flex gap-4 bg-zinc-900/50">
+          <button type="button" onClick={onClose} className="flex-1 py-4 bg-zinc-950 border border-white/5 text-zinc-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-900 transition-all">
+            Cancelar
           </button>
-          <button onClick={() => onSave(formData.type, formData)} className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-            <Save size={20} /> {planType ? 'Salvar SKU Atual' : 'Publicar Novo Plano'}
+          <button
+            onClick={handleSubmit}
+            disabled={isSaving}
+            className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={18} />}
+            {plan ? 'Salvar SKU Atual' : 'Publicar Novo Plano'}
           </button>
         </div>
       </div>
@@ -207,69 +229,103 @@ const PlanModal = ({
   );
 };
 
-const PlanCard: React.FC<{ type: PlanType | string; config: PlanLimits; onEdit: () => void }> = ({ type, config, onEdit }) => (
-  <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-    {type === PlanType.ENTERPRISE && (
-      <div className="absolute top-0 right-0 p-4">
-        <Crown className="text-indigo-200" size={40} />
+const PlanCard = ({ plan, onEdit, onDelete }: { plan: any; onEdit: () => void; onDelete: () => void }) => (
+  <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 p-10 shadow-2xl hover:bg-zinc-800 transition-all group relative overflow-hidden flex flex-col h-full">
+    {plan.name === 'ENTERPRISE' && (
+      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+        <Crown size={120} className="text-blue-500" />
       </div>
     )}
-    
-    <div className="flex justify-between items-start mb-6">
-      <div className={`p-4 rounded-2xl ${
-        type === PlanType.ENTERPRISE ? 'bg-indigo-50 text-indigo-600' : 
-        type === PlanType.PRO ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600'
-      }`}>
-        <CreditCard size={28} />
-      </div>
-      <button 
-        onClick={onEdit}
-        className="p-3 text-slate-400 hover:text-blue-600 rounded-xl hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100 shadow-sm"
-      >
-        <Settings size={20} />
-      </button>
-    </div>
 
-    <div className="mb-6">
-      <h3 className="text-xl font-bold text-slate-800">{type}</h3>
-      <div className="flex items-baseline gap-1 mt-1">
-        <span className="text-2xl font-black text-slate-900">R$ {config.price}</span>
-        <span className="text-slate-400 text-[10px] font-black uppercase">/ mês</span>
+    <div className="flex justify-between items-start mb-8">
+      <div className={`p-4 rounded-3xl ${plan.name === PlanType.ENTERPRISE ? 'bg-indigo-500/10 text-indigo-400' :
+        plan.name === PlanType.PRO ? 'bg-blue-500/10 text-blue-400' : 'bg-zinc-950 text-zinc-600 border border-white/5'
+        }`}>
+        {plan.name === PlanType.ENTERPRISE ? <Crown size={32} /> : <Zap size={32} />}
       </div>
-    </div>
-    
-    <div className="space-y-4 mb-8">
-      <div className="flex items-center justify-between text-sm font-bold">
-        <span className="text-slate-500 flex items-center gap-2"><Users size={16} className="text-blue-500" /> Membros</span>
-        <span className="text-slate-900">{config.maxMembers >= 99999 ? 'Ilimitado' : config.maxMembers}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm font-bold">
-        <span className="text-slate-500 flex items-center gap-2"><Layers size={16} className="text-indigo-500" /> Células</span>
-        <span className="text-slate-900">{config.maxCells >= 9999 ? 'Ilimitado' : config.maxCells}</span>
-      </div>
-      <div className="flex items-center justify-between text-sm font-bold">
-        <span className="text-slate-500 flex items-center gap-2"><ShieldCheck size={16} className="text-emerald-500" /> Líderes</span>
-        <span className="text-slate-900">{config.maxLeaders >= 9999 ? 'Ilimitado' : config.maxLeaders}</span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onEdit}
+          className="p-3 text-zinc-500 hover:text-white rounded-2xl hover:bg-zinc-950 transition-all border border-transparent hover:border-white/10 shadow-sm"
+        >
+          <Settings size={18} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-3 text-zinc-500 hover:text-rose-500 rounded-2xl hover:bg-rose-500/10 transition-all border border-transparent hover:border-rose-500/20 shadow-sm"
+        >
+          <Trash2 size={18} />
+        </button>
       </div>
     </div>
 
-    <div className="space-y-2.5 pt-6 border-t border-slate-100">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Diferenciais</p>
-      {config.features.map(f => (
-        <div key={f} className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase tracking-tighter">
-          <CheckCircle2 size={12} className="text-emerald-500" /> {f.replace('_', ' ')}
+    <div className="mb-8">
+      <h3 className="text-xl font-black text-white tracking-tighter uppercase mb-2">{plan.name}</h3>
+      <div className="flex items-baseline gap-2">
+        <span className="text-3xl font-black text-white">R$ {plan.price}</span>
+        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">/ mês</span>
+      </div>
+    </div>
+
+    <div className="space-y-5 mb-10 flex-1">
+      <div className="flex items-center justify-between">
+        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+          <Users size={16} className="text-blue-500" /> Membros
+        </span>
+        <span className="text-sm font-black text-white">{plan.maxMembers >= 99999 ? 'ILIMITADO' : plan.maxMembers}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+          <Layers size={16} className="text-indigo-500" /> Células
+        </span>
+        <span className="text-sm font-black text-white">{plan.maxCells >= 9999 ? 'ILIMITADO' : plan.maxCells}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+          <ShieldCheck size={16} className="text-emerald-500" /> Líderes
+        </span>
+        <span className="text-sm font-black text-white">{plan.maxLeaders >= 9999 ? 'ILIMITADO' : plan.maxLeaders}</span>
+      </div>
+    </div>
+
+    <div className="space-y-3 pt-8 border-t border-white/5">
+      <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4">Diferenciais Ativos</p>
+      {plan.features.slice(0, 5).map((f: string) => (
+        <div key={f} className="flex items-center gap-3 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {f.replace('_', ' ')}
         </div>
       ))}
+      {plan.features.length > 5 && (
+        <p className="text-[9px] text-zinc-600 font-black uppercase mt-2">+{plan.features.length - 5} recursos inclusos</p>
+      )}
     </div>
   </div>
 );
 
 const PlansManager: React.FC = () => {
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<{type: string, config: PlanLimits} | null>(null);
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
 
-  const handleEditPlan = (type: string, config: PlanLimits) => {
-    setEditingPlan({ type, config });
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const loadPlans = async () => {
+    try {
+      setIsLoading(true);
+      const data = await planService.list();
+      setPlans(data);
+    } catch (error) {
+      console.error('Erro ao carregar planos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPlan = (plan: any) => {
+    setEditingPlan(plan);
     setIsModalOpen(true);
   };
 
@@ -278,78 +334,125 @@ const PlansManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSavePlan = (type: string, data: any) => {
-    console.log(`Guardando plano ${type}:`, data);
-    // Em um sistema real aqui atualizaríamos o backend ou estado global
-    setIsModalOpen(false);
+  const handleSavePlan = async (formData: any) => {
+    try {
+      if (formData.id) {
+        await planService.update(formData.id, formData);
+      } else {
+        await planService.create(formData);
+      }
+      await loadPlans();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeletePlan = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este SKU? Esta ação não pode ser desfeita.')) return;
+
+    try {
+      await planService.delete(id);
+      await loadPlans();
+    } catch (error) {
+      console.error('Erro ao excluir plano:', error);
+      alert('Não foi possível excluir o plano.');
+    }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Planos & Assinaturas</h2>
-          <p className="text-slate-500 font-medium italic">Defina a precificação e os limites técnicos do ecossistema SaaS.</p>
-        </div>
-        <button 
-          onClick={handleAddPlan}
-          className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-[1.5rem] text-sm font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 group"
-        >
-          <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-          Criar Novo SKU
-        </button>
-      </div>
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <PageHeader
+        title="Planos & Assinaturas"
+        subtitle="Defina a precificação e os limites técnicos do ecossistema SaaS."
+        actions={
+          <button
+            onClick={handleAddPlan}
+            className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/20 group"
+          >
+            <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+            Criar Novo SKU
+          </button>
+        }
+      />
 
       {/* Metrics Header */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100 flex flex-col justify-between h-44">
-          <div className="flex justify-between items-start">
-            <TrendingUp className="opacity-50" size={32} />
-            <span className="text-[10px] bg-white/20 px-3 py-1 rounded-full font-black">+12% vs m.a.</span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><TrendingUp size={100} className="text-emerald-500" /></div>
+          <div className="flex justify-between items-start mb-10">
+            <div className="p-4 bg-emerald-500/10 rounded-2xl shadow-lg border border-emerald-500/10">
+              <DollarSign className="text-emerald-400" size={24} />
+            </div>
+            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full font-black tracking-widest uppercase">+12% vs m.a.</span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">MRR Atual Global</p>
-            <h3 className="text-3xl font-black">R$ 42.500</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">MRR ATUAL GLOBAL</p>
+            <h3 className="text-4xl font-black text-white tracking-tighter">R$ 42.500</h3>
           </div>
         </div>
-        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl shadow-slate-200 flex flex-col justify-between h-44">
-          <div className="flex justify-between items-start">
-            <BarChart3 className="opacity-50" size={32} />
-            <span className="text-[10px] bg-blue-500 px-3 py-1 rounded-full font-black">OTIMIZAR</span>
+
+        <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><BarChart3 size={100} className="text-blue-500" /></div>
+          <div className="flex justify-between items-start mb-10">
+            <div className="p-4 bg-blue-500/10 rounded-2xl shadow-lg border border-blue-500/10">
+              <TrendingUp className="text-blue-400" size={24} />
+            </div>
+            <span className="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-full font-black tracking-widest uppercase">OTIMIZAR</span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Conversão SaaS</p>
-            <h3 className="text-3xl font-black">24.5%</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">CONVERSÃO SAAS</p>
+            <h3 className="text-4xl font-black text-white tracking-tighter">24.5%</h3>
           </div>
         </div>
-        <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100 flex flex-col justify-between h-44">
-          <div className="flex justify-between items-start">
-            <Zap className="opacity-50" size={32} />
-            <span className="text-[10px] bg-white/20 px-3 py-1 rounded-full font-black">124 ATIVAS</span>
+
+        <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><Zap size={100} className="text-indigo-500" /></div>
+          <div className="flex justify-between items-start mb-10">
+            <div className="p-4 bg-indigo-500/10 rounded-2xl shadow-lg border border-indigo-500/10">
+              <Zap className="text-indigo-400" size={24} />
+            </div>
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-full font-black tracking-widest uppercase">124 ATIVAS</span>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Distribuição Pro</p>
-            <h3 className="text-3xl font-black">84% de adesão</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">DISTRIBUIÇÃO PRO</p>
+            <h3 className="text-4xl font-black text-white tracking-tighter">84% adesão</h3>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 pb-12">
-        {Object.entries(PLAN_CONFIGS).map(([type, config]) => (
-          <PlanCard 
-            key={type} 
-            type={type} 
-            config={config} 
-            onEdit={() => handleEditPlan(type, config)} 
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-40 gap-4">
+          <Loader2 size={48} className="text-blue-600 animate-spin" />
+          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.5em] animate-pulse">Sincronizando SKUs...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+          {plans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              onEdit={() => handleEditPlan(plan)}
+              onDelete={() => handleDeletePlan(plan.id)}
+            />
+          ))}
 
-      <PlanModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        planType={editingPlan?.type}
-        config={editingPlan?.config}
+          {/* Add New Plan Placeholder */}
+          <div
+            onClick={handleAddPlan}
+            className="group cursor-pointer bg-zinc-950 border-2 border-dashed border-white/5 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-4 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all text-zinc-700 hover:text-blue-500 min-h-[500px]"
+          >
+            <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center border border-white/5 group-hover:border-blue-500/50 shadow-2xl transition-all">
+              <Plus size={32} className="group-hover:rotate-90 transition-transform" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em]">Adicionar Novo SKU</p>
+          </div>
+        </div>
+      )}
+
+      <PlanModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        plan={editingPlan}
         onSave={handleSavePlan}
       />
     </div>
@@ -357,3 +460,4 @@ const PlansManager: React.FC = () => {
 };
 
 export default PlansManager;
+

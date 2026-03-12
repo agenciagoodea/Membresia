@@ -39,6 +39,11 @@ import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest } from
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
 import { prayerService } from '../services/prayerService';
+<<<<<<< HEAD
+=======
+import { useState, useEffect } from 'react';
+import PageHeader from './Shared/PageHeader';
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
 const dataGrowth = [
   { name: 'Jan', members: 380, revenue: 12000 },
@@ -76,16 +81,16 @@ const StatCard = ({ title, value, trend, icon, color, subValue }: any) => (
 );
 
 const MasterDashboard = () => (
-  <div className="space-y-10 animate-in fade-in duration-700">
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div>
-        <h2 className="text-4xl font-black text-white tracking-tighter">Global Control</h2>
-        <p className="text-zinc-500 font-medium text-lg">Visão estratégica e saúde do ecossistema SaaS.</p>
-      </div>
-      <div className="flex items-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl shadow-2xl">
-        <Activity size={14} className="text-emerald-500 animate-pulse" /> INFRA ESTRUTURA ONLINE • JUN 2024
-      </div>
-    </div>
+  <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+    <PageHeader
+      title="Global Control"
+      subtitle="Visão estratégica e saúde do ecossistema SaaS."
+      actions={
+        <div className="flex w-full md:w-auto items-center justify-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl shadow-2xl">
+          <Activity size={14} className="text-emerald-500 animate-pulse" /> INFRA ESTRUTURA ONLINE • JUN 2024
+        </div>
+      }
+    />
 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
       <StatCard title="Total de Clientes" value="124" trend={5} icon={<Globe className="text-blue-400" />} color="bg-blue-500/10" />
@@ -161,16 +166,16 @@ const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], 
   const cellPercent = (activeCells / planLimits.maxCells) * 100;
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Painel Administrativo</h2>
-          <p className="text-zinc-500 font-medium text-lg italic">Gerenciamento operacional da {MOCK_TENANT.name}.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="px-5 py-2.5 bg-blue-600/10 text-blue-500 rounded-2xl text-[10px] font-black border border-blue-500/20 uppercase tracking-widest">PLANO {MOCK_TENANT.plan}</span>
-        </div>
-      </div>
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title="Painel Administrativo"
+        subtitle={`Gerenciamento operacional da ${MOCK_TENANT.name}.`}
+        actions={
+          <span className="w-full md:w-auto text-center px-5 py-2.5 bg-blue-600/10 text-blue-500 rounded-2xl text-[10px] font-black border border-blue-500/20 uppercase tracking-widest">
+            PLANO {MOCK_TENANT.plan}
+          </span>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <StatCard title="Fluxo de Caixa" value="R$ 18.250" trend={8} icon={<DollarSign className="text-emerald-400" />} color="bg-emerald-500/10" />
@@ -246,16 +251,16 @@ const PastorDashboard = ({ members, cells, prayers }: { members: Member[], cells
   ];
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase">Pastoral Insights</h2>
-          <p className="text-zinc-500 font-medium text-lg italic">Indicadores de saúde espiritual e crescimento.</p>
-        </div>
-        <div className="flex items-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl">
-          <Calendar size={14} className="text-blue-500" /> JUNHO 2024
-        </div>
-      </div>
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title="Pastoral Insights"
+        subtitle="Indicadores de saúde espiritual e crescimento."
+        actions={
+          <div className="flex w-full md:w-auto items-center justify-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl">
+            <Calendar size={14} className="text-blue-500" /> JUNHO 2024
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatCard title="Total Membros" value={members.length} trend={12} icon={<Users className="text-blue-400" />} color="bg-blue-500/10" />
@@ -320,16 +325,16 @@ const LeaderDashboard = ({ user, members, cells }: { user: any, members: Member[
   const cellMembers = members.filter(m => m.cellId === myCell.id);
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase">{myCell.name}</h2>
-          <p className="text-zinc-500 font-medium text-lg">Cuidado e pastoreio local.</p>
-        </div>
-        <button className="px-8 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-105 transition-all">
-          Lançar Relatório
-        </button>
-      </div>
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title={myCell.name}
+        subtitle="Cuidado e pastoreio local."
+        actions={
+          <button className="w-full md:w-auto px-8 py-3 md:py-4 bg-blue-600 text-white rounded-2xl md:rounded-[1.5rem] font-black text-[10px] md:text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-105 transition-all">
+            Lançar Relatório
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <StatCard title="Presença Média" value="88%" trend={2} icon={<Users className="text-emerald-400" />} color="bg-emerald-500/10" />

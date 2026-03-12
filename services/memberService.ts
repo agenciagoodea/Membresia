@@ -10,12 +10,14 @@ const mapToFrontend = (m: any): Member => ({
 	stage: m.stage,
 	cellId: m.cell_id,
 	disciplerId: m.discipler_id,
+	pastorId: m.pastor_id,
 	baptismDate: m.baptism_date,
 	joinedDate: m.joined_date,
 	avatar: m.avatar,
 	stageHistory: m.stage_history || [],
 	completedMilestones: m.completed_milestones || [],
 	origin: m.origin,
+	cpf: m.cpf,
 	cep: m.cep,
 	state: m.state,
 	city: m.city,
@@ -31,21 +33,22 @@ const mapToFrontend = (m: any): Member => ({
 
 const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
 	const db: any = {};
-	if (m.id) db.id = m.id;
 	if (m.church_id) db.church_id = m.church_id;
 	if (m.name !== undefined) db.name = m.name;
 	if (m.email !== undefined) db.email = m.email;
 	if (m.phone !== undefined) db.phone = m.phone;
 	if (m.role !== undefined) db.role = m.role;
 	if (m.stage !== undefined) db.stage = m.stage;
-	if (m.cellId !== undefined) db.cell_id = m.cellId;
-	if (m.disciplerId !== undefined) db.discipler_id = m.disciplerId;
+	if (m.cellId !== undefined) db.cell_id = m.cellId || null;
+	if (m.disciplerId !== undefined) db.discipler_id = m.disciplerId || null;
+	if (m.pastorId !== undefined) db.pastor_id = m.pastorId || null;
 	if (m.baptismDate !== undefined) db.baptism_date = m.baptismDate;
 	if (m.joinedDate !== undefined) db.joined_date = m.joinedDate;
 	if (m.avatar !== undefined) db.avatar = m.avatar;
 	if (m.stageHistory !== undefined) db.stage_history = m.stageHistory;
 	if (m.completedMilestones !== undefined) db.completed_milestones = m.completedMilestones;
 	if (m.origin !== undefined) db.origin = m.origin;
+	if (m.cpf !== undefined) db.cpf = m.cpf;
 	if (m.cep !== undefined) db.cep = m.cep;
 	if (m.state !== undefined) db.state = m.state;
 	if (m.city !== undefined) db.city = m.city;
@@ -54,7 +57,7 @@ const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
 	if (m.number !== undefined) db.number = m.number;
 	if (m.complement !== undefined) db.complement = m.complement;
 	if (m.maritalStatus !== undefined) db.marital_status = m.maritalStatus;
-	if (m.spouseId !== undefined) db.spouse_id = m.spouseId;
+	if (m.spouseId !== undefined) db.spouse_id = m.spouseId || null;
 	if (m.login !== undefined) db.login = m.login;
 	if (m.password !== undefined) db.password = m.password;
 	return db;
@@ -66,6 +69,17 @@ export const memberService = {
 			.from('members')
 			.select('*')
 			.eq('church_id', churchId);
+
+		if (error) throw error;
+		return (data || []).map(mapToFrontend);
+	},
+
+	async search(query: string) {
+		const { data, error } = await supabase
+			.from('members')
+			.select('*')
+			.or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+			.limit(10);
 
 		if (error) throw error;
 		return (data || []).map(mapToFrontend);

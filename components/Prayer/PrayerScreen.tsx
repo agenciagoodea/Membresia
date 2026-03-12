@@ -1,15 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Stars, UserCircle2, Quote, Clock, Sparkles, X, ChevronLeft } from 'lucide-react';
-import { MOCK_PRAYER_REQUESTS, MOCK_TENANT } from '../../constants';
-import { PrayerStatus, PrayerRequest } from '../../types';
+import { Heart, Stars, UserCircle2, Quote, Clock, Sparkles, X, ChevronLeft, Loader2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { ChurchStatus, PrayerStatus, PrayerRequest, ChurchTenant } from '../../types';
 import { prayerService } from '../../services/prayerService';
+import { churchService } from '../../services/churchService';
+import { MOCK_TENANT } from '../../constants';
+import { supabase } from '../../services/supabaseClient';
 
 const PrayerScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const effectiveSlug = slug || 'vida-nova'; // Fallback para o slug padrão do MOCK_TENANT
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [tenant, setTenant] = useState<ChurchTenant | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [hasPending, setHasPending] = useState(false);
+  const lastRequestIdRef = React.useRef<string | null>(null);
+
+  // URL para o QR Code (página de envio desta igreja)
+  const shareUrl = `${window.location.origin}/#/prayer/new/${tenant?.slug || effectiveSlug}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&bgcolor=ffffff&color=000000&margin=10`;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -17,29 +30,105 @@ const PrayerScreen: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
 
+<<<<<<< HEAD
     const loadPrayers = async () => {
+=======
+    const loadData = async (isSilent = false) => {
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
       try {
-        const data = await prayerService.getAll(MOCK_TENANT.id);
-        const approved = data.filter(r =>
-          (r.status === PrayerStatus.APPROVED || r.status === PrayerStatus.IN_PRAYER) && (r.showOnScreen !== false)
-        );
-        setRequests(approved);
+        if (!isSilent) setLoading(true);
+        // 1. Carregar Tenant
+        let currentTenant: ChurchTenant | null = null;
+        if (slug) {
+          console.log('Buscando igreja com slug:', slug);
+          currentTenant = await churchService.getBySlug(slug).catch(() => null);
+        }
+
+        // Se não houver slug ou falhar, busca a primeira do banco (Padrão)
+        if (!currentTenant) {
+          console.log('Sem slug ou erro, buscando igreja padrão...');
+          currentTenant = await churchService.getFirst().catch(err => {
+            console.warn('Nenhuma igreja no banco, usando MOCK:', err);
+            return MOCK_TENANT;
+          });
+        }
+        setTenant(currentTenant);
+
+        // 2. Carregar Pedidos
+        if (currentTenant) {
+          console.log('Carregando pedidos para:', currentTenant.name, '(ID:', currentTenant.id, ')');
+          const data = await prayerService.getAll(currentTenant.id);
+          console.log('Pedidos brutos:', data.length);
+
+          // 1. Filtrar Aprovados ou Em Clamor
+          // 2. Ordenar por data (mais recentes primeiro)
+          const approved = data
+            .filter(r =>
+              (r.status === PrayerStatus.APPROVED ||
+                r.status === PrayerStatus.IN_PRAYER) &&
+              r.showOnScreen !== false
+            )
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          console.log('Pedidos aprovados para o telão:', approved.length);
+
+          // Lógica inteligente de transição:
+          // Se o pedido atual saiu da lista (foi atendido), volta para o início ou o anterior
+          setRequests((prevRequests) => {
+            const hasChanged = JSON.stringify(prevRequests) !== JSON.stringify(approved);
+            if (hasChanged) {
+              console.log('Lista de pedidos atualizada no telão. Ajustando index...');
+              // Se o pedido que estava sendo exibido sumiu, ou a lista ficou vazia, reseta
+              if (approved.length === 0) {
+                setCurrentIndex(0);
+                lastRequestIdRef.current = null;
+              } else if (currentIndex >= approved.length) {
+                setCurrentIndex(0);
+              }
+
+              // Se o pedido mais recente mudou, reseta para mostrar o mais novo
+              if (approved.length > 0 && approved[0].id !== lastRequestIdRef.current) {
+                lastRequestIdRef.current = approved[0].id;
+                setCurrentIndex(0);
+              }
+            }
+            return approved;
+          });
+
+          setHasPending(data.some(r => r.status === PrayerStatus.PENDING));
+        }
       } catch (error) {
-        console.error('Erro ao carregar orações:', error);
+        console.error('Erro ao carregar dados do telão:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadPrayers();
+    loadData();
 
+<<<<<<< HEAD
     const subscription = prayerService.subscribeToPrayers(() => {
       loadPrayers();
+=======
+    // Inscrição em tempo real com monitoramento de status
+    const channel = prayerService.subscribeToPrayers((payload) => {
+      console.log('Realtime detectado no Telão:', payload.eventType);
+      loadData(true); // Carregar em background (sem spinner)
+    });
+
+    channel.subscribe((status) => {
+      console.log('CONEXÃO REALTIME:', status);
+      if (status === 'CHANNEL_ERROR') {
+        console.error('Erro na conexão Realtime. Pode ser bloqueio do navegador ou VPN.');
+      }
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
     });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, [navigate]);
+  }, [navigate, slug]);
 
   useEffect(() => {
     if (requests.length <= 1) return;
@@ -53,9 +142,18 @@ const PrayerScreen: React.FC = () => {
 
   const current = requests[currentIndex];
 
-  if (!current) {
+  if (loading) {
     return (
-      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-white p-20 text-center relative overflow-hidden">
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+        <Loader2 size={48} className="animate-spin text-blue-500 mb-4" />
+        <p className="text-zinc-500 font-bold tracking-widest uppercase text-xs">Sincronizando com o Trono...</p>
+      </div>
+    );
+  }
+
+  if (!current || !tenant) {
+    return (
+      <div className="min-h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-white p-8 md:p-12 text-center relative overflow-y-auto scrollbar-hide">
         <button
           onClick={() => navigate('/app')}
           className="absolute top-8 left-8 p-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white/50 hover:text-white transition-all z-50 flex items-center gap-2 font-bold text-sm"
@@ -64,25 +162,33 @@ const PrayerScreen: React.FC = () => {
         </button>
 
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-        <div className="relative mb-12">
-          <div className="absolute inset-0 bg-rose-500 rounded-full blur-[150px] opacity-30 animate-pulse"></div>
-          <div className="relative z-10 w-40 h-40 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center justify-center backdrop-blur-3xl shadow-2xl">
-            <Heart size={100} className="text-rose-500 fill-rose-500 animate-pulse" />
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-rose-500 rounded-full blur-[100px] opacity-20 animate-pulse"></div>
+          <div className="relative z-10 w-24 h-24 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center backdrop-blur-3xl shadow-2xl">
+            <Heart size={48} className="text-rose-500 fill-rose-500 animate-pulse" />
           </div>
         </div>
-        <h1 className="text-8xl font-black mb-8 uppercase tracking-tighter bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">Clamor Coletivo</h1>
-        <p className="text-4xl text-slate-400 font-medium max-w-3xl leading-relaxed">
-          Envie seu pedido agora mesmo. Aponte sua câmera para o <span className="text-white font-black underline decoration-rose-500">QR Code</span> e junte-se a nós em oração.
+        <h1 className="text-5xl md:text-7xl font-black mb-4 uppercase tracking-tighter bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">Clamor Coletivo</h1>
+        <p className="text-xl md:text-2xl text-slate-400 font-medium max-w-2xl leading-relaxed mb-8">
+          {hasPending
+            ? <span>Existem pedidos <span className="text-rose-400 font-black underline">aguardando moderação</span>. Aprove-os no painel para exibi-los aqui.</span>
+            : <span>Envie seu pedido agora mesmo. Aponte sua câmera para o <span className="text-white font-black underline decoration-rose-500">QR Code</span> e junte-se a nós em oração.</span>}
         </p>
-        <div className="mt-20 flex items-center gap-12 bg-white/5 px-12 py-6 rounded-full border border-white/10 backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <Clock className="text-rose-500" size={32} />
-            <span className="text-2xl font-black uppercase tracking-widest text-white/80">Momento de Fé</span>
+
+        <div className="mb-10 bg-white p-4 rounded-[2rem] shadow-2xl ring-4 ring-white/5 animate-in zoom-in duration-700">
+          <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
+          <p className="text-zinc-950 font-black text-[10px] uppercase tracking-widest mt-2">Escaneie para orar</p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-6 bg-white/5 px-8 py-4 rounded-full border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <Clock className="text-rose-500" size={24} />
+            <span className="text-lg font-black uppercase tracking-widest text-white/80">Momento de Fé</span>
           </div>
-          <div className="h-10 w-px bg-white/10"></div>
-          <div className="flex items-center gap-4">
-            <Sparkles className="text-blue-400" size={32} />
-            <span className="text-2xl font-black uppercase tracking-widest text-white/80">{MOCK_TENANT.name}</span>
+          <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
+          <div className="flex items-center gap-3">
+            <Sparkles className="text-blue-400" size={24} />
+            <span className="text-lg font-black uppercase tracking-widest text-white/80">{tenant?.name || 'Carregando...'}</span>
           </div>
         </div>
       </div>
@@ -107,16 +213,16 @@ const PrayerScreen: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
       </div>
 
-      <div key={current.id} className="relative z-10 w-full max-w-[1600px] px-24 py-12 flex flex-col items-center animate-in fade-in zoom-in-95 duration-1000">
+      <div key={current.id} className="relative z-10 w-full max-w-[1400px] px-8 md:px-12 py-6 flex flex-col items-center animate-in fade-in zoom-in-95 duration-1000">
 
         {/* Superior Label */}
-        <div className="flex items-center gap-12 mb-24">
-          <div className="w-48 h-1.5 bg-gradient-to-r from-transparent to-rose-500/50 rounded-full"></div>
-          <div className="flex items-center gap-6 bg-white/5 border border-white/10 px-12 py-5 rounded-[2rem] backdrop-blur-3xl shadow-2xl">
-            <Heart size={32} className="text-rose-500 fill-rose-500" />
-            <span className="text-3xl font-black uppercase tracking-[0.6em] text-white">INTERCESSÃO</span>
+        <div className="flex items-center gap-6 mb-12">
+          <div className="w-24 h-1 bg-gradient-to-r from-transparent to-rose-500/50 rounded-full"></div>
+          <div className="flex items-center gap-4 bg-white/5 border border-white/10 px-8 py-3 rounded-2xl backdrop-blur-3xl shadow-2xl">
+            <Heart size={24} className="text-rose-500 fill-rose-500" />
+            <span className="text-xl font-black uppercase tracking-[0.4em] text-white">INTERCESSÃO</span>
           </div>
-          <div className="w-48 h-1.5 bg-gradient-to-l from-transparent to-rose-500/50 rounded-full"></div>
+          <div className="w-24 h-1 bg-gradient-to-l from-transparent to-rose-500/50 rounded-full"></div>
         </div>
 
         <div className="flex flex-col xl:flex-row items-center gap-24 xl:gap-32 w-full">
@@ -124,7 +230,7 @@ const PrayerScreen: React.FC = () => {
           <div className="shrink-0 relative group">
             <div className="absolute -inset-8 bg-gradient-to-br from-rose-500 to-indigo-600 rounded-[5rem] blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
 
-            <div className="relative bg-slate-900 rounded-[2rem] border-[8px] border-white/5 shadow-2xl overflow-hidden flex items-center justify-center w-[500px] h-[500px] xl:w-[500px] xl:h-[500px]">
+            <div className="relative bg-slate-900 rounded-[2rem] border-[8px] border-white/5 shadow-2xl overflow-hidden flex items-center justify-center w-[350px] h-[350px] xl:w-[450px] xl:h-[450px]">
               {current.photo ? (
                 <img
                   src={current.photo}
@@ -133,8 +239,8 @@ const PrayerScreen: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-800">
-                  <UserCircle2 size={300} strokeWidth={0.5} />
-                  <p className="text-xl font-black uppercase tracking-[0.5em] mt-8 opacity-20">Clamor</p>
+                  <UserCircle2 size={200} strokeWidth={0.5} />
+                  <p className="text-lg font-black uppercase tracking-[0.5em] mt-4 opacity-20">Clamor</p>
                 </div>
               )}
             </div>
@@ -160,8 +266,8 @@ const PrayerScreen: React.FC = () => {
             </div>
 
             <div className="relative">
-              <Quote className="absolute -left-16 -top-12 text-rose-500/20" size={120} />
-              <p className="text-5xl xl:text-6xl text-slate-100 font-medium italic leading-[1.2] text-balance">
+              <Quote className="absolute -left-12 -top-8 text-rose-500/20" size={80} />
+              <p className="text-3xl xl:text-5xl text-slate-100 font-medium italic leading-[1.2] text-balance">
                 "{current.request}"
               </p>
             </div>
@@ -181,36 +287,34 @@ const PrayerScreen: React.FC = () => {
         </div>
 
         {/* Cinematic Footer */}
-        <div className="mt-32 w-full flex items-center justify-between px-16 py-8 bg-white/5 rounded-[4rem] border border-white/10 backdrop-blur-2xl">
-          <div className="flex items-center gap-8">
-            <div className="w-24 h-24 rounded-3xl bg-white p-4 shadow-2xl overflow-hidden flex items-center justify-center">
-              <img src={MOCK_TENANT.logo} className="w-full h-full object-contain" alt="" />
-            </div>
+        <div className="mt-8 md:mt-12 w-full flex flex-col md:flex-row items-center justify-between px-8 py-4 bg-white/5 rounded-[2.5rem] border border-white/10 backdrop-blur-2xl gap-6">
+          <div className="flex items-center gap-4">
+            {tenant.logo ? (
+              <div className="w-12 h-12 rounded-xl bg-white p-2 shadow-2xl overflow-hidden flex items-center justify-center border border-white/10">
+                <img src={tenant.logo} className="w-full h-full object-contain" alt="" />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl shadow-2xl border border-white/10">
+                {tenant.name.substring(0, 1)}
+              </div>
+            )}
             <div>
-              <p className="text-4xl font-black text-white leading-none mb-1">{MOCK_TENANT.name}</p>
-              <p className="text-lg text-slate-400 font-bold uppercase tracking-[0.5em]">Visionary Cloud Experience</p>
+              <p className="text-xl font-black text-white leading-none mb-1 uppercase tracking-tight">{tenant.name}</p>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.3em]">Canal de Oração Oficial</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-12">
-            <div className="text-right">
-              <p className="text-xs font-black text-rose-500 uppercase tracking-widest mb-2">PRÓXIMO PEDIDO EM</p>
-              <div className="flex gap-3 justify-end">
+          <div className="flex items-center gap-10">
+            <div className="text-right hidden sm:block">
+              <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-2">PRÓXIMO PEDIDO EM</p>
+              <div className="flex gap-2 justify-end">
                 {requests.map((_, i) => (
-                  <div key={i} className={`h-2 rounded-full transition-all duration-1000 ${i === currentIndex ? 'w-16 bg-white' : 'w-4 bg-white/20'}`}></div>
+                  <div key={i} className={`h-1.5 rounded-full transition-all duration-1000 ${i === currentIndex ? 'w-12 bg-white' : 'w-3 bg-white/20'}`}></div>
                 ))}
               </div>
             </div>
-            <div className="w-32 h-32 bg-white rounded-3xl p-1 shadow-2xl group relative overflow-hidden">
-              <div className="w-full h-full bg-slate-950 rounded-2xl flex flex-col items-center justify-center text-white text-center p-2">
-                <Sparkles size={24} className="text-rose-500 mb-1" />
-                <span className="text-[7px] font-black uppercase tracking-widest leading-none">ESCANEIE<br />ENVIE ORAÇÃO</span>
-              </div>
-              <div className="absolute inset-0 bg-white p-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="w-full h-full bg-slate-900 rounded-xl flex items-center justify-center border-2 border-slate-100">
-                  <Heart size={32} className="text-rose-500 p-1" />
-                </div>
-              </div>
+            <div className="w-24 h-24 bg-white rounded-2xl p-1 shadow-2xl group relative overflow-hidden shrink-0">
+              <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>

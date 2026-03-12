@@ -42,7 +42,11 @@ import { MOCK_PRAYER_REQUESTS, MOCK_TENANT } from '../../constants';
 import { LadderStage, PrayerStatus, PrayerRequest, UserRole, MemberOrigin } from '../../types';
 import { prayerService } from '../../services/prayerService';
 import { memberService } from '../../services/memberService';
+<<<<<<< HEAD
 >>>>>>> 1ecc747 (1.0 Ficha)
+=======
+import PageHeader from '../Shared/PageHeader';
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
 const PrayerModeration: React.FC = () => {
   const navigate = useNavigate();
@@ -83,20 +87,32 @@ const PrayerModeration: React.FC = () => {
   const [memberEmails, setMemberEmails] = useState<Set<string>>(new Set());
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
+  const loadRequests = async () => {
+    try {
+      const [requestsData, membersData] = await Promise.all([
+        prayerService.getAll(MOCK_TENANT.id),
+        memberService.getAll(MOCK_TENANT.id)
+      ]);
+      setRequests(requestsData);
+      setMemberEmails(new Set(membersData.map(m => m.email || '').map(e => e.toLowerCase()).filter(e => e)));
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    }
+  };
+
   useEffect(() => {
-    const loadRequests = async () => {
-      try {
-        const [requestsData, membersData] = await Promise.all([
-          prayerService.getAll(MOCK_TENANT.id),
-          memberService.getAll(MOCK_TENANT.id)
-        ]);
-        setRequests(requestsData);
-        setMemberEmails(new Set(membersData.map(m => m.email.toLowerCase()).filter(e => e)));
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-      }
-    };
     loadRequests();
+
+    // Inscrição em tempo real para auto-refresh
+    const subscription = prayerService.subscribeToPrayers((payload) => {
+      console.log('Evento Realtime na Moderação:', payload.eventType);
+      // Recarrega a lista para qualquer mudança no banco
+      loadRequests();
+    });
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   const updateStatus = async (id: string, status: PrayerStatus) => {
@@ -193,6 +209,7 @@ const PrayerModeration: React.FC = () => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
@@ -211,6 +228,21 @@ const PrayerModeration: React.FC = () => {
           <Monitor size={18} className="text-blue-500" /> Abrir Modo Telão
         </button>
       </div>
+=======
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+      <PageHeader
+        title="Moderação de Clamor"
+        subtitle="Curadoria de fé para o telão e acompanhamento pastoral."
+        actions={
+          <button
+            onClick={() => navigate('/prayer-screen')}
+            className="flex w-full md:w-auto items-center justify-center gap-3 px-6 md:px-8 py-3 md:py-4 bg-zinc-900 border border-white/5 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all shadow-2xl"
+          >
+            <Monitor size={18} className="text-blue-500" /> Abrir Modo Telão
+          </button>
+        }
+      />
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
       <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
         {[
@@ -269,13 +301,14 @@ const PrayerModeration: React.FC = () => {
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-5 mb-5">
+              <div className="flex flex-col md:flex-row md:flex-wrap items-start md:items-center gap-5 mb-5">
                 <div className="flex flex-col">
-                  <h3 className="text-2xl font-black text-white tracking-tight leading-none">
+                  <h3 className="text-2xl font-black text-white tracking-tight leading-none break-all">
                     {req.isAnonymous ? (
-                      <span className="flex items-center gap-2 text-zinc-500 italic font-medium text-lg uppercase tracking-widest">[ Anônimo ]</span>
+                      <span className="flex items-center gap-2 text-zinc-500 italic font-medium text-base md:text-lg uppercase tracking-widest">[ Anônimo ]</span>
                     ) : req.name}
                   </h3>
+<<<<<<< HEAD
                   <div className="flex items-center gap-3 mt-1.5">
 <<<<<<< HEAD
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
@@ -283,31 +316,45 @@ const PrayerModeration: React.FC = () => {
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
 >>>>>>> 1ecc747 (1.0 Ficha)
                     <div className="w-1 h-1 rounded-full bg-zinc-700" />
+=======
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div className="hidden md:block w-1 h-1 rounded-full bg-zinc-700" />
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{new Date(req.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 {req.requestPastoralCall && (
 <<<<<<< HEAD
+<<<<<<< HEAD
                   <div className="flex items-center gap-3 px-5 py-2 bg-indigo-600/10 text-indigo-400 rounded-2xl text-[9px] font-black uppercase border border-indigo-500/20 shadow-lg shadow-indigo-500/10 animate-pulse">
                     <UserPlus size={14} /> Acompanhamento Solicitado
 =======
                   <div className="flex items-center gap-3 px-5 py-2 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase shadow-lg shadow-emerald-500/40 animate-pulse border border-emerald-400/50">
+=======
+                  <div className="flex items-center gap-3 px-4 md:px-5 py-2 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase shadow-lg shadow-emerald-500/40 animate-pulse border border-emerald-400/50">
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                     <UserPlus size={14} className="animate-bounce" /> Acompanhamento Solicitado
 >>>>>>> 1ecc747 (1.0 Ficha)
                   </div>
                 )}
 
+<<<<<<< HEAD
                 <div className="flex items-center gap-2 ml-auto">
                   <a href={`tel:${req.phone}`} className="p-3.5 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><Phone size={18} /></a>
 <<<<<<< HEAD
                   <button className="p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><MessageSquare size={18} /></button>
 =======
+=======
+                <div className="flex items-center gap-2 mt-4 md:mt-0 md:ml-auto w-full md:w-auto">
+                  <a href={`tel:${req.phone}`} className="flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><Phone size={18} /></a>
+>>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                   <a
                     href={`https://wa.me/55${req.phone.replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"
+                    className="flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"
                   >
                     <MessageSquare size={18} />
                   </a>
@@ -315,8 +362,8 @@ const PrayerModeration: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-zinc-950 p-6 rounded-[2rem] border border-white/5 mb-6 shadow-inner">
-                <p className="text-zinc-200 text-lg font-medium italic leading-relaxed">"{req.request}"</p>
+              <div className="bg-zinc-950 p-6 rounded-[2rem] border border-white/5 mb-6 shadow-inner break-words">
+                <p className="text-zinc-200 text-base md:text-lg font-medium italic leading-relaxed w-full">"{req.request}"</p>
               </div>
 <<<<<<< HEAD
               

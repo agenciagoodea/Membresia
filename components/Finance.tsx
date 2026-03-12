@@ -19,6 +19,7 @@ import {
 import { MOCK_TENANT } from '../constants';
 import { FinancialRecord } from '../types';
 import { financeService } from '../services/financeService';
+import PageHeader from './Shared/PageHeader';
 
 const FinanceStatCard = ({ title, amount, trend, icon, color, isNegative }: any) => (
   <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group">
@@ -91,22 +92,22 @@ const Finance: React.FC = () => {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
       {/* Header Financeiro */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase mb-2">Fluxo Financeiro</h2>
-          <p className="text-zinc-500 font-medium text-lg italic">Gestão estratégica de dízimos, ofertas e investimentos eclesiásticos.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-6 py-4 bg-zinc-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all">
-            <Download size={18} /> Exportar Extrato
-          </button>
-          <button className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 group">
-            <Plus size={20} className="group-hover:rotate-90 transition-transform" /> Novo Lançamento
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Fluxo Financeiro"
+        subtitle="Gestão estratégica de dízimos, ofertas e investimentos eclesiásticos."
+        actions={
+          <>
+            <button className="flex items-center gap-2 px-4 md:px-6 py-3 md:py-4 bg-zinc-900 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all w-full md:w-auto justify-center">
+              <Download size={18} /> Exportar Extrato
+            </button>
+            <button className="flex items-center gap-3 px-6 md:px-8 py-3 md:py-4 bg-blue-600 text-white rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 group w-full md:w-auto justify-center">
+              <Plus size={20} className="group-hover:rotate-90 transition-transform" /> Novo Lançamento
+            </button>
+          </>
+        }
+      />
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -177,7 +178,8 @@ const Finance: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto scrollbar-hide">
-          <table className="w-full text-left">
+          {/* VISUALIZAÇÃO DESKTOP */}
+          <table className="w-full text-left hidden md:table">
             <thead className="bg-zinc-950/30 text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">
               <tr>
                 <th className="px-10 py-6">Descrição da Transação</th>
@@ -229,6 +231,32 @@ const Finance: React.FC = () => {
               ))}
             </tbody>
           </table>
+
+          {/* VISUALIZAÇÃO MOBILE (Cards) */}
+          <div className="md:hidden flex flex-col divide-y divide-white/5">
+            {filteredRecords.map((record) => (
+              <div key={record.id} className="p-5 hover:bg-white/5 transition-all">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center border ${record.type === 'INCOME' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'}`}>
+                      {record.type === 'INCOME' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-white uppercase tracking-tight truncate mb-1">{record.description}</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest truncate">{new Date(record.date).toLocaleDateString('pt-BR')} • {record.category}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-2">
+                  <span className="text-[10px] font-black text-zinc-600 uppercase">#{record.id.substring(0, 8).toUpperCase()}</span>
+                  <p className={`text-lg font-black tracking-tighter ${record.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {record.type === 'INCOME' ? '+' : '-'} R$ {record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Footer da Tabela */}
@@ -246,15 +274,15 @@ const Finance: React.FC = () => {
       </div>
 
       {/* Widget Informativo IA */}
-      <div className="bg-zinc-100 p-10 rounded-[3rem] text-zinc-950 flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden group">
+      <div className="bg-zinc-100 p-6 md:p-10 rounded-3xl md:rounded-[3rem] text-zinc-950 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><TrendingUp size={150} /></div>
-        <div className="space-y-4 max-w-2xl">
-          <h4 className="text-3xl font-black tracking-tighter uppercase leading-none">Insight Financeiro IA</h4>
-          <p className="text-zinc-600 font-bold leading-relaxed italic text-lg">
+        <div className="space-y-4 max-w-2xl text-center md:text-left">
+          <h4 className="text-2xl md:text-3xl font-black tracking-tighter uppercase leading-none">Insight Financeiro IA</h4>
+          <p className="text-zinc-600 font-bold leading-relaxed italic text-sm md:text-lg">
             "Baseado na média dos últimos 3 meses, sua igreja apresenta um crescimento de 12% nas ofertas voluntárias. Recomendamos destinar o excedente para o fundo de expansão de novas células."
           </p>
         </div>
-        <button className="shrink-0 px-10 py-5 bg-zinc-950 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all flex items-center gap-3">
+        <button className="w-full md:w-auto shrink-0 px-8 py-4 md:px-10 md:py-5 bg-zinc-950 text-white rounded-2xl md:rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all flex justify-center items-center gap-3">
           Explorar Insights <ArrowRight size={18} />
         </button>
       </div>
