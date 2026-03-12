@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const getAI = () => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -7,7 +7,7 @@ const getAI = () => {
     console.warn("Gemini API Key missing (VITE_GEMINI_API_KEY). IA Insights will not work.");
     return null;
   }
-  return new GoogleGenAI(apiKey);
+  return new GoogleGenerativeAI(apiKey);
 };
 
 export async function generatePastoralInsight(context: string) {

@@ -39,11 +39,8 @@ import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest } from
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
 import { prayerService } from '../services/prayerService';
-<<<<<<< HEAD
-=======
-import { useState, useEffect } from 'react';
 import PageHeader from './Shared/PageHeader';
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
+
 
 const dataGrowth = [
   { name: 'Jan', members: 380, revenue: 12000 },

@@ -30,11 +30,8 @@ const PrayerScreen: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
 
-<<<<<<< HEAD
-    const loadPrayers = async () => {
-=======
     const loadData = async (isSilent = false) => {
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
+
       try {
         if (!isSilent) setLoading(true);
         // 1. Carregar Tenant
@@ -106,10 +103,6 @@ const PrayerScreen: React.FC = () => {
 
     loadData();
 
-<<<<<<< HEAD
-    const subscription = prayerService.subscribeToPrayers(() => {
-      loadPrayers();
-=======
     // Inscrição em tempo real com monitoramento de status
     const channel = prayerService.subscribeToPrayers((payload) => {
       console.log('Realtime detectado no Telão:', payload.eventType);
@@ -121,7 +114,7 @@ const PrayerScreen: React.FC = () => {
       if (status === 'CHANNEL_ERROR') {
         console.error('Erro na conexão Realtime. Pode ser bloqueio do navegador ou VPN.');
       }
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
+
     });
 
     return () => {

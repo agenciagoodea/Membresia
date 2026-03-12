@@ -214,7 +214,7 @@ export const MOCK_MEETING_REPORTS: MeetingReport[] = [
     visitorCount: 2,
     childrenCount: 0,
     offeringAmount: 150.00,
-    childrenCount: 0,
+
     report: 'Reunião abençoada com muito louvor e uma palavra sobre fé.',
     recordedBy: 'João Silva'
   }

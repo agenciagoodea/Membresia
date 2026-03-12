@@ -1,15 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  Search, 
-  MoreVertical, 
-  UserPlus, 
-=======
 import {
   CheckCircle2,
   XCircle,
@@ -17,7 +8,6 @@ import {
   Search,
   MoreVertical,
   UserPlus,
->>>>>>> 1ecc747 (1.0 Ficha)
   Phone,
   MessageSquare,
   Check,
@@ -32,58 +22,19 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  X
+  X,
+  TrendingUp
 } from 'lucide-react';
-<<<<<<< HEAD
-import { MOCK_PRAYER_REQUESTS } from '../../constants';
-import { PrayerStatus, PrayerRequest } from '../../types';
-=======
 import { MOCK_PRAYER_REQUESTS, MOCK_TENANT } from '../../constants';
 import { LadderStage, PrayerStatus, PrayerRequest, UserRole, MemberOrigin } from '../../types';
 import { prayerService } from '../../services/prayerService';
 import { memberService } from '../../services/memberService';
-<<<<<<< HEAD
->>>>>>> 1ecc747 (1.0 Ficha)
-=======
 import PageHeader from '../Shared/PageHeader';
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
 const PrayerModeration: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<string>('ALL');
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
-<<<<<<< HEAD
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('ecclesia_prayer_requests') || '[]');
-    setRequests([...MOCK_PRAYER_REQUESTS, ...stored]);
-  }, []);
-
-  const updateStatus = (id: string, status: PrayerStatus) => {
-    const updated = requests.map(r => r.id === id ? {...r, status} : r);
-    setRequests(updated);
-    
-    const stored = JSON.parse(localStorage.getItem('ecclesia_prayer_requests') || '[]');
-    if (stored.some((r: any) => r.id === id)) {
-      localStorage.setItem('ecclesia_prayer_requests', JSON.stringify(stored.map((r: any) => r.id === id ? {...r, status} : r)));
-    }
-    setActiveMenuId(null);
-  };
-
-  const removeRequest = (id: string) => {
-    if(confirm('Excluir permanentemente?')) {
-      const updated = requests.filter(r => r.id !== id);
-      setRequests(updated);
-      const stored = JSON.parse(localStorage.getItem('ecclesia_prayer_requests') || '[]');
-      localStorage.setItem('ecclesia_prayer_requests', JSON.stringify(stored.filter((r: any) => r.id !== id)));
-    }
-  };
-
-  const handleImportToWin = (request: PrayerRequest) => {
-    alert(`Sucesso! ${request.name} foi importado para a Escada do Sucesso (Stage: GANHAR).`);
-    updateStatus(request.id, PrayerStatus.ANSWERED);
-=======
   const [memberEmails, setMemberEmails] = useState<Set<string>>(new Set());
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
@@ -104,14 +55,13 @@ const PrayerModeration: React.FC = () => {
     loadRequests();
 
     // Inscrição em tempo real para auto-refresh
-    const subscription = prayerService.subscribeToPrayers((payload) => {
+    const channel = prayerService.subscribeToPrayers((payload) => {
       console.log('Evento Realtime na Moderação:', payload.eventType);
-      // Recarrega a lista para qualquer mudança no banco
       loadRequests();
     });
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      if (channel) channel.unsubscribe();
     };
   }, []);
 
@@ -142,16 +92,13 @@ const PrayerModeration: React.FC = () => {
 
   const handleImportToWin = async (request: PrayerRequest) => {
     try {
-      // 0. Verificar se já existe membro com este e-mail
       if (request.email && memberEmails.has(request.email.toLowerCase())) {
-        // Se já existe, apenas marcamos o pedido como atendido/direcionado localmente para o UI
         await prayerService.updateStatus(request.id, PrayerStatus.ANSWERED);
         const updated = requests.map(r => r.id === request.id ? { ...r, status: PrayerStatus.ANSWERED } : r);
         setRequests(updated);
         return;
       }
 
-      // 1. Criar o membro no banco (Estágio GANHAR)
       await memberService.create({
         church_id: MOCK_TENANT.id,
         name: request.name,
@@ -159,7 +106,7 @@ const PrayerModeration: React.FC = () => {
         phone: request.phone,
         role: UserRole.MEMBER_VISITOR,
         stage: LadderStage.WIN,
-        cellId: '', // Ainda sem célula definida
+        cellId: '',
         joinedDate: new Date().toISOString(),
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(request.name)}&background=random`,
         origin: MemberOrigin.PRAYER_REQUEST,
@@ -171,35 +118,24 @@ const PrayerModeration: React.FC = () => {
         }]
       });
 
-      // 2. Atualizar lista de e-mails local
       if (request.email) {
         setMemberEmails(prev => new Set([...prev, request.email.toLowerCase()]));
       }
 
-      // 3. Marcar pedido como atendido
       await prayerService.updateStatus(request.id, PrayerStatus.ANSWERED);
 
-      // 3. Atualizar estado local
       const updated = requests.map(r => r.id === request.id ? { ...r, status: PrayerStatus.ANSWERED } : r);
       setRequests(updated);
-
-      // 4. Notificar sem redirecionar (conforme o usuário solicitou que o botão fique verde)
-      // alert(`Sucesso! ${request.name} agora é um novo decidido.`);
     } catch (error: any) {
       console.error('Erro ao importar membro:', error);
       alert('Erro ao realizar a importação: ' + (error.message || 'Erro inesperado'));
     }
->>>>>>> 1ecc747 (1.0 Ficha)
   };
 
   const filtered = requests.filter(r => filter === 'ALL' ? true : r.status === filter);
 
   const getStatusColor = (status: PrayerStatus) => {
-<<<<<<< HEAD
-    switch(status) {
-=======
     switch (status) {
->>>>>>> 1ecc747 (1.0 Ficha)
       case PrayerStatus.PENDING: return 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]';
       case PrayerStatus.APPROVED: return 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]';
       case PrayerStatus.IN_PRAYER: return 'bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]';
@@ -209,26 +145,6 @@ const PrayerModeration: React.FC = () => {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <h2 className="text-4xl font-black text-white tracking-tighter uppercase mb-2">Moderação de Clamor</h2>
-          <p className="text-zinc-500 font-medium text-lg italic">Curadoria de fé para o telão e acompanhamento pastoral.</p>
-        </div>
-<<<<<<< HEAD
-        <button 
-          onClick={() => navigate('/prayer-screen')} 
-=======
-        <button
-          onClick={() => navigate('/prayer-screen')}
->>>>>>> 1ecc747 (1.0 Ficha)
-          className="flex items-center gap-3 px-8 py-4 bg-zinc-900 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all shadow-2xl"
-        >
-          <Monitor size={18} className="text-blue-500" /> Abrir Modo Telão
-        </button>
-      </div>
-=======
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
       <PageHeader
         title="Moderação de Clamor"
@@ -242,7 +158,6 @@ const PrayerModeration: React.FC = () => {
           </button>
         }
       />
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
 
       <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
         {[
@@ -252,20 +167,11 @@ const PrayerModeration: React.FC = () => {
           { label: 'Em Clamor', filter: PrayerStatus.IN_PRAYER, activeClass: 'bg-indigo-500 text-white shadow-indigo-500/20' },
           { label: 'Atendidos', filter: PrayerStatus.ANSWERED, activeClass: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
         ].map((s) => (
-<<<<<<< HEAD
-          <button 
-            key={s.label} 
-            onClick={() => setFilter(s.filter)} 
-            className={`flex items-center gap-4 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase transition-all whitespace-nowrap border ${
-              filter === s.filter ? s.activeClass + ' scale-105' : 'bg-zinc-900 text-zinc-500 border-white/5 hover:border-white/10'
-            }`}
-=======
           <button
             key={s.label}
             onClick={() => setFilter(s.filter)}
             className={`flex items-center gap-4 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase transition-all whitespace-nowrap border ${filter === s.filter ? s.activeClass + ' scale-105' : 'bg-zinc-900 text-zinc-500 border-white/5 hover:border-white/10'
               }`}
->>>>>>> 1ecc747 (1.0 Ficha)
           >
             {s.label}
           </button>
@@ -275,21 +181,14 @@ const PrayerModeration: React.FC = () => {
       <div className="grid grid-cols-1 gap-6">
         {filtered.map((req) => (
           <div key={req.id} className="bg-zinc-900 p-8 rounded-[3rem] border border-white/5 shadow-2xl flex flex-col xl:flex-row xl:items-center gap-10 hover:bg-zinc-800/80 transition-all relative overflow-hidden group">
-            {/* Status Glow Bar */}
             <div className={`absolute top-0 bottom-0 left-0 w-2 ${getStatusColor(req.status)}`} />
 
             <div className="relative shrink-0 flex items-center justify-center">
               {req.photo ? (
                 <div className="relative">
-<<<<<<< HEAD
-                  <img src={req.photo} className="w-28 h-28 rounded-3xl object-cover ring-4 ring-zinc-950 shadow-2xl" alt="" />
-                  <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-xl flex items-center justify-center border-2 border-zinc-950 ${getStatusColor(req.status)}`}>
-                     <Check size={14} className="text-white" />
-=======
                   <img src={req.photo} className="w-28 h-28 rounded-full ring-4 ring-zinc-950 shadow-2xl object-cover aspect-square" alt="" />
                   <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-xl flex items-center justify-center border-2 border-zinc-950 ${getStatusColor(req.status)}`}>
                     <Check size={14} className="text-white" />
->>>>>>> 1ecc747 (1.0 Ficha)
                   </div>
                 </div>
               ) : (
@@ -308,48 +207,21 @@ const PrayerModeration: React.FC = () => {
                       <span className="flex items-center gap-2 text-zinc-500 italic font-medium text-base md:text-lg uppercase tracking-widest">[ Anônimo ]</span>
                     ) : req.name}
                   </h3>
-<<<<<<< HEAD
-                  <div className="flex items-center gap-3 mt-1.5">
-<<<<<<< HEAD
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-=======
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
->>>>>>> 1ecc747 (1.0 Ficha)
-                    <div className="w-1 h-1 rounded-full bg-zinc-700" />
-=======
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registrado em: {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     <div className="hidden md:block w-1 h-1 rounded-full bg-zinc-700" />
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                     <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{new Date(req.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 {req.requestPastoralCall && (
-<<<<<<< HEAD
-<<<<<<< HEAD
-                  <div className="flex items-center gap-3 px-5 py-2 bg-indigo-600/10 text-indigo-400 rounded-2xl text-[9px] font-black uppercase border border-indigo-500/20 shadow-lg shadow-indigo-500/10 animate-pulse">
-                    <UserPlus size={14} /> Acompanhamento Solicitado
-=======
-                  <div className="flex items-center gap-3 px-5 py-2 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase shadow-lg shadow-emerald-500/40 animate-pulse border border-emerald-400/50">
-=======
                   <div className="flex items-center gap-3 px-4 md:px-5 py-2 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase shadow-lg shadow-emerald-500/40 animate-pulse border border-emerald-400/50">
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                     <UserPlus size={14} className="animate-bounce" /> Acompanhamento Solicitado
->>>>>>> 1ecc747 (1.0 Ficha)
                   </div>
                 )}
 
-<<<<<<< HEAD
-                <div className="flex items-center gap-2 ml-auto">
-                  <a href={`tel:${req.phone}`} className="p-3.5 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><Phone size={18} /></a>
-<<<<<<< HEAD
-                  <button className="p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><MessageSquare size={18} /></button>
-=======
-=======
                 <div className="flex items-center gap-2 mt-4 md:mt-0 md:ml-auto w-full md:w-auto">
                   <a href={`tel:${req.phone}`} className="flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><Phone size={18} /></a>
->>>>>>> a3bb399 (feat: refatoração da lógica de trilha de membros, melhorias no módulo de oração e administração)
                   <a
                     href={`https://wa.me/55${req.phone.replace(/\D/g, '')}`}
                     target="_blank"
@@ -358,32 +230,12 @@ const PrayerModeration: React.FC = () => {
                   >
                     <MessageSquare size={18} />
                   </a>
->>>>>>> 1ecc747 (1.0 Ficha)
                 </div>
               </div>
 
               <div className="bg-zinc-950 p-6 rounded-[2rem] border border-white/5 mb-6 shadow-inner break-words">
                 <p className="text-zinc-200 text-base md:text-lg font-medium italic leading-relaxed w-full">"{req.request}"</p>
               </div>
-<<<<<<< HEAD
-              
-              <div className="flex flex-wrap items-center gap-8">
-                 <div className="flex items-center gap-2.5 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
-                   <ShieldAlert size={16} className="text-emerald-500/50" /> Protocolo LGPD Ativo
-                 </div>
-                 <div className="flex items-center gap-2.5 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
-                   {req.showOnScreen ? <Eye size={16} className="text-blue-500" /> : <EyeOff size={16} className="text-zinc-700" />} 
-                   {req.showOnScreen ? 'Público no Telão' : 'Sigilo Ministerial'}
-                 </div>
-                 {req.requestPastoralCall && (
-                   <button 
-                     onClick={() => handleImportToWin(req)} 
-                     className="flex items-center gap-2.5 px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 border border-indigo-400/20"
-                   >
-                     <UserCheck size={16} /> Importar para "GANHAR"
-                   </button>
-                 )}
-=======
 
               <div className="flex flex-wrap items-center gap-8">
                 <div className="flex items-center gap-2.5 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
@@ -413,23 +265,11 @@ const PrayerModeration: React.FC = () => {
                     );
                   })()
                 )}
->>>>>>> 1ecc747 (1.0 Ficha)
               </div>
             </div>
 
             <div className="flex items-center gap-4 border-t xl:border-t-0 xl:border-l border-white/5 pt-8 xl:pt-0 xl:pl-10">
               <div className="flex flex-col gap-4 w-full xl:w-56">
-<<<<<<< HEAD
-                <button 
-                  onClick={() => updateStatus(req.id, PrayerStatus.APPROVED)} 
-                  className="w-full flex items-center justify-center gap-2 px-6 py-5 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
-                >
-                  <CheckCircle2 size={18} /> APROVAR AGORA
-                </button>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setActiveMenuId(activeMenuId === req.id ? null : req.id)} 
-=======
                 {req.status === PrayerStatus.PENDING && (
                   <button
                     onClick={() => updateStatus(req.id, PrayerStatus.APPROVED)}
@@ -459,18 +299,12 @@ const PrayerModeration: React.FC = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setActiveMenuId(activeMenuId === req.id ? null : req.id)}
->>>>>>> 1ecc747 (1.0 Ficha)
                     className="flex-1 py-4 bg-zinc-950 border border-white/10 text-zinc-400 rounded-2xl text-[10px] font-black uppercase hover:text-white transition-all flex items-center justify-center gap-2"
                   >
                     OPÇÕES <ChevronDown size={14} className={activeMenuId === req.id ? 'rotate-180 transition-transform' : 'transition-transform'} />
                   </button>
-<<<<<<< HEAD
-                  <button 
-                    onClick={() => removeRequest(req.id)} 
-=======
                   <button
                     onClick={() => removeRequest(req.id)}
->>>>>>> 1ecc747 (1.0 Ficha)
                     className="p-4 text-zinc-600 hover:text-rose-500 bg-zinc-950 border border-white/5 rounded-2xl hover:bg-rose-500/10 transition-all"
                   >
                     <Trash2 size={18} />

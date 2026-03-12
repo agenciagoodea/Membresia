@@ -229,7 +229,7 @@ const PlanModal = ({
   );
 };
 
-const PlanCard = ({ plan, onEdit, onDelete }: { plan: any; onEdit: () => void; onDelete: () => void }) => (
+const PlanCard: React.FC<{ plan: any; onEdit: () => void; onDelete: () => void }> = ({ plan, onEdit, onDelete }) => (
   <div className="bg-zinc-900 rounded-[2.5rem] border border-white/5 p-10 shadow-2xl hover:bg-zinc-800 transition-all group relative overflow-hidden flex flex-col h-full">
     {plan.name === 'ENTERPRISE' && (
       <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
