@@ -684,8 +684,8 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
     try {
       setLoading(true);
       const [cellsData, membersData] = await Promise.all([
-        cellService.getAll(MOCK_TENANT.id),
-        memberService.getAll(MOCK_TENANT.id)
+        cellService.getAll(user.church_id),
+        memberService.getAll(user.church_id)
       ]);
       setCells(cellsData);
       setMembers(membersData);
@@ -700,7 +700,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
     loadData();
   }, []);
 
-  const planLimits = PLAN_CONFIGS[MOCK_TENANT.plan];
+  const planLimits = PLAN_CONFIGS[user.church_plan || 'PRO'];
   const isLimitReached = cells.length >= planLimits.maxCells;
 
   const handleCreateCell = () => {
@@ -720,7 +720,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
       } else {
         const created = await cellService.create({
           ...formData,
-          church_id: MOCK_TENANT.id,
+          church_id: user.church_id,
           status: 'ACTIVE'
         });
         setCells([created, ...cells]);

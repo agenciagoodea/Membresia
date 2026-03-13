@@ -281,38 +281,59 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [pendingPrayersCount, setPendingPrayersCount] = useState(0);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const profileResolvedRef = React.useRef(false);
+
+  // --- FUNÇÃO AUXILIAR: Resolver perfil a partir da sessão ---
+  const resolveProfile = React.useCallback(async (session: any) => {
+    if (!session?.user) return null;
+
+    // 1. Tentar cache no metadata (90%+ dos casos - zero latência)
+    const cached = session.user.user_metadata?.profile;
+    if (cached) return cached;
+
+    // 2. Fallback: buscar no banco e atualizar cache para próxima vez
+    if (session.user.email) {
+      const fresh = await memberService.getByEmail(session.user.email);
+      if (fresh) {
+        supabase.auth.updateUser({ data: { profile: fresh } }).catch(() => {});
+      }
+      return fresh;
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
-    // Timer de segurança para não travar no loading
-    const safetyTimer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
+    // Timer de segurança reduzido para 2s
+    const safetyTimer = setTimeout(() => setLoading(false), 2000);
 
-    const initAuth = async () => {
-      try {
-        const sessionData = await authService.getSession();
-        if (sessionData?.profile) {
-          setCurrentUser(sessionData.profile);
-        }
-      } catch (err) {
-        console.error('Erro na inicialização de Auth:', err);
-      } finally {
-        setLoading(false);
-        clearTimeout(safetyTimer);
-      }
-    };
-
-    initAuth();
-
-    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+    // Usar APENAS o listener onAuthStateChange como fonte de verdade.
+    // O evento INITIAL_SESSION é disparado automaticamente na montagem
+    // e elimina a necessidade de chamar getSession() separadamente.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Evento de Autenticação:', event);
-      
-      if (event === 'SIGNED_IN') {
-        if (session?.user?.email) {
-          const profile = await memberService.getByEmail(session.user.email);
-          setCurrentUser(profile);
+      clearTimeout(safetyTimer);
+
+      if (event === 'INITIAL_SESSION') {
+        // Sessão restaurada do localStorage — geralmente instantâneo
+        if (session) {
+          const profile = await resolveProfile(session);
+          if (profile) setCurrentUser(profile);
         }
+        setLoading(false);
+        profileResolvedRef.current = true;
+      } else if (event === 'SIGNED_IN') {
+        if (!profileResolvedRef.current) {
+          const profile = await resolveProfile(session);
+          if (profile) setCurrentUser(profile);
+        }
+        profileResolvedRef.current = true;
+        setLoading(false);
+      } else if (event === 'USER_UPDATED') {
+        // Atualizar cache local quando perfil mudar
+        const updated = session?.user?.user_metadata?.profile;
+        if (updated) setCurrentUser(updated);
       } else if (event === 'SIGNED_OUT') {
+        profileResolvedRef.current = false;
         setCurrentUser(null);
         setLoading(false);
       }
@@ -322,22 +343,22 @@ const App: React.FC = () => {
       subscription.unsubscribe();
       clearTimeout(safetyTimer);
     };
-  }, []);
+  }, [resolveProfile]);
 
+  // Carregar contador de orações pendentes de forma não-bloqueante
   useEffect(() => {
-    // Buscar total de pendentes se houver usuário e church_id
     if (currentUser?.church_id) {
-        loadPendingCount();
+      loadPendingCount();
     }
-  }, [currentUser]);
+  }, [currentUser?.church_id]);
 
   const loadPendingCount = async () => {
     if (!currentUser?.church_id) return;
     try {
       const { count, error } = await supabase
         .from('prayers')
-        .select('*', { count: 'exact', head: true })
-        .eq('church_id', currentUser.church_id) // Usar church_id do perfil real
+        .select('id', { count: 'exact', head: true })
+        .eq('church_id', currentUser.church_id)
         .eq('status', PrayerStatus.PENDING);
 
       if (!error) setPendingPrayersCount(count || 0);
@@ -345,6 +366,7 @@ const App: React.FC = () => {
       console.error('Erro ao buscar total de pendentes:', error);
     }
   };
+
 
   useEffect(() => {
     if (!currentUser?.church_id) return;

@@ -25,7 +25,7 @@ const PrayerHistory: React.FC<{ user: any }> = ({ user }) => {
     const loadPrayers = async () => {
       try {
         setLoading(true);
-        const data = await prayerService.getAll(user.church_id || 'mircentrosul');
+        const data = await prayerService.getAll(user.church_id);
         setPrayers(data.filter(p => p.email === user.email));
       } catch (e) {
         console.error("Erro ao carregar orações:", e);
@@ -34,7 +34,7 @@ const PrayerHistory: React.FC<{ user: any }> = ({ user }) => {
       }
     };
     loadPrayers();
-  }, [user]);
+  }, [user?.church_id, user?.email]);
 
   const filteredPrayers = prayers.filter(p => {
     const matchesFilter = filter === 'ALL' || p.status === filter;

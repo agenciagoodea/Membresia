@@ -81,6 +81,17 @@ export const churchService = {
 		return mapToFrontend(data);
 	},
 
+	async getById(id: string) {
+		const { data, error } = await supabase
+			.from('churches')
+			.select('*')
+			.eq('id', id)
+			.single();
+
+		if (error) throw error;
+		return mapToFrontend(data);
+	},
+
 	async getFirst() {
 		const { data, error } = await supabase
 			.from('churches')

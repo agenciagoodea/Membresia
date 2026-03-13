@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from './Shared/cropImage';
-import { MOCK_TENANT } from '../constants';
 import { memberService } from '../services/memberService';
 import { churchService } from '../services/churchService';
 import { Member, ChurchTenant, UserRole } from '../types';
@@ -84,44 +83,46 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
   };
 
   useEffect(() => {
+    if (!user?.church_id) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Buscar igreja (usando slug mokado vida-nova ou MOCK_TENANT)
-        const churchRes = await churchService.getBySlug(MOCK_TENANT.slug);
-        setChurch(churchRes);
-        setChurchData(churchRes);
-
-        // Buscar todos membros dessa igreja e achar o logado pra montar o perfil
-        const membersList = await memberService.getAll(churchRes.id);
-        setAllMembers(membersList);
-
-        let myProfile = membersList.find(m => m.email === user.email);
-
-        if (!myProfile) {
-          myProfile = membersList.find(m => m.name === user.name);
+        // Buscar igreja pelo ID real do usuário
+        const churchRes = await churchService.getById(user.church_id);
+        if (!cancelled && churchRes) {
+          setChurch(churchRes);
+          setChurchData(churchRes);
         }
 
-        if (myProfile) {
-          setMember(myProfile);
-          setProfileData(myProfile);
-        } else {
-          // Se não existir, criar um stub provisório
-          setProfileData({
-            name: user.name,
-            email: 'pastor@igreja.com',
-            phone: '(11) 99999-9999',
-            avatar: user.avatar
-          });
+        // Buscar membros e achar o perfil logado
+        if (!cancelled) {
+          const membersList = await memberService.getAll(user.church_id);
+          setAllMembers(membersList);
+
+          const myProfile = membersList.find(m => m.email === user.email) ||
+                            membersList.find(m => m.id === user.id);
+
+          if (myProfile && !cancelled) {
+            setMember(myProfile);
+            setProfileData(myProfile);
+          } else if (!cancelled) {
+            setProfileData({ name: user.name, email: user.email, avatar: user.avatar });
+          }
         }
       } catch (error) {
-        console.error('Erro ao buscar cadastro oficial:', error);
+        if (!cancelled) console.error('Erro ao buscar cadastro oficial:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.id, user?.church_id]);
 
   const handleSave = async () => {
     try {

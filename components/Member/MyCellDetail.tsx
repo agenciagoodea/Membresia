@@ -21,29 +21,35 @@ const MyCellDetail: React.FC<{ user: any }> = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const churchId = user?.church_id;
+    const cellId = user?.cellId;
+    if (!churchId || !cellId) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     const fetchData = async () => {
       try {
         setLoading(true);
-        if (user.cellId) {
-          const cells = await cellService.getAll(user.church_id || 'mircentrosul');
-          const myCell = cells.find(c => c.id === user.cellId);
-          if (myCell) {
-            setCell(myCell);
-            // Simular busca de relatório
-            const reports = await cellService.getReports(myCell.id);
-            if (reports && reports.length > 0) {
-              setLastReport(reports[0]);
-            }
+        const cells = await cellService.getAll(churchId);
+        const myCell = cells.find(c => c.id === cellId);
+        if (myCell && !cancelled) {
+          setCell(myCell);
+          const reports = await cellService.getReports(myCell.id);
+          if (reports?.length > 0 && !cancelled) {
+            setLastReport(reports[0]);
           }
         }
       } catch (e) {
-        console.error("Erro ao carregar dados da célula:", e);
+        if (!cancelled) console.error("Erro ao carregar dados da célula:", e);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user?.church_id, user?.cellId]);
 
   if (loading) {
     return <div className="py-20 text-center text-zinc-500 font-black uppercase tracking-[0.5em] animate-pulse">Sincronizando com sua Célula...</div>;

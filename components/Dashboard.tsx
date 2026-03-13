@@ -42,7 +42,7 @@ import {
   Bar,
   Cell as RechartsCell
 } from 'recharts';
-import { MOCK_TENANT, PLAN_CONFIGS } from '../constants';
+import { PLAN_CONFIGS } from '../constants';
 import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest, PlanType } from '../types';
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
@@ -612,35 +612,49 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      // Se não temos church_id e o usuário não é Master Admin, não há o que carregar
-      if (!user?.church_id && user?.role !== UserRole.MASTER_ADMIN) {
-        setLoading(false);
-        return;
-      }
+    // Sem church_id e sem ser Master Admin: nada a carregar
+    const churchId = user?.church_id;
+    const role = user?.role;
 
+    if (!churchId && role !== UserRole.MASTER_ADMIN) {
+      setLoading(false);
+      return;
+    }
+
+    // Master Admin tem painel próprio com dados estáticos — não carregar
+    if (role === UserRole.MASTER_ADMIN) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadData = async () => {
       try {
         setLoading(true);
-        // Para Master Admin, talvez precisemos de uma lógica diferente no futuro (ver todas as igrejas)
-        // Por ora, usamos o church_id do perfil se existir
-        const currentChurchId = user?.church_id || MOCK_TENANT.id;
-
         const [mTable, cTable, pTable] = await Promise.all([
-          memberService.getAll(currentChurchId),
-          cellService.getAll(currentChurchId),
-          prayerService.getAll(currentChurchId)
+          memberService.getAll(churchId),
+          cellService.getAll(churchId),
+          prayerService.getAll(churchId)
         ]);
-        setMembers(mTable);
-        setCells(cTable);
-        setPrayers(pTable);
+        if (!cancelled) {
+          setMembers(mTable);
+          setCells(cTable);
+          setPrayers(pTable);
+        }
       } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error);
+        if (!cancelled) console.error('Erro ao carregar dados do dashboard:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     loadData();
-  }, [user]);
+
+    return () => { cancelled = true; };
+  // Usar valores primitivos como dependência evita re-execução desnecessária
+  // quando o objeto `user` tem nova referência mas os mesmos dados
+  }, [user?.church_id, user?.role]);
 
   if (loading && user.role !== UserRole.MASTER_ADMIN) {
     return (

@@ -39,8 +39,8 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
     try {
       setLoading(true);
       const [membersData, cellsData] = await Promise.all([
-        memberService.getAll(MOCK_TENANT.id),
-        cellService.getAll(MOCK_TENANT.id)
+        memberService.getAll(user.church_id),
+        cellService.getAll(user.church_id)
       ]);
       setMembers(membersData);
       setCells(cellsData);
@@ -55,7 +55,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
     loadData();
   }, []);
 
-  const planLimit = PLAN_CONFIGS[MOCK_TENANT.plan].maxMembers;
+  const planLimit = PLAN_CONFIGS[user.church_plan || 'PRO'].maxMembers;
   const currentTotal = members.length;
   const isLimitReached = currentTotal >= planLimit;
 
@@ -136,7 +136,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
         const origin = formData.origin || MemberOrigin.OTHER_CHURCH;
         const created = await memberService.create({
           ...finalFormData,
-          church_id: MOCK_TENANT.id,
+          church_id: user.church_id,
           joinedDate: new Date().toISOString(),
           origin: origin,
           completedMilestones:
@@ -359,9 +359,11 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
                   <a href={`mailto:${member.email}`} className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all text-[#10px]">
                     <Mail size={14} />
                   </a>
-                  <a href={`https://wa.me/55${member.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-[#10px]">
-                    <Phone size={14} />
-                  </a>
+                  {member.phone && (
+                    <a href={`https://wa.me/55${member.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-[#10px]">
+                      <Phone size={14} />
+                    </a>
+                  )}
                   <button onClick={() => handleEditMember(member)} className="flex-1 flex items-center justify-center py-2 bg-zinc-900 border border-white/5 rounded-xl text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all text-[#10px]">
                     <Edit2 size={14} />
                   </button>
