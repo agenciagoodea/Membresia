@@ -191,7 +191,7 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+		<div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto pt-4 md:pt-10">
 			<div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
 
 			<div className="relative w-full max-w-2xl bg-zinc-950 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">

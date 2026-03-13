@@ -228,7 +228,7 @@ const PublicRegistration = () => {
 		<div className="min-h-screen bg-zinc-950 flex flex-col relative overflow-x-hidden">
 			{/* Modal do Cropper de Foto — fora do contêiner com scroll para funcionar corretamente */}
 			{isCropping && (
-				<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+				<div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 overflow-y-auto pt-4 md:pt-10">
 					<div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={handleCropCancel} />
 					<div className="relative w-full max-w-lg mx-auto bg-zinc-950 border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
 						<div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/80">
