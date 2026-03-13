@@ -225,22 +225,34 @@ const PublicRegistration = () => {
 	}
 
 	return (
-		<div className="min-h-screen bg-zinc-950 flex flex-col relative overflow-x-hidden">
-			{/* Modal do Cropper de Foto — fora do contêiner com scroll para funcionar corretamente */}
+		<div className="min-h-screen bg-zinc-950 flex flex-col relative overflow-x-hidden selection:bg-blue-500/30">
+			{/* Fundo Imersivo (Tela Cheia) */}
+			<div className="fixed inset-0 z-0">
+				<div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-zinc-950/90 to-zinc-950 z-10" />
+				<div 
+					className="absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105"
+					style={{ 
+						backgroundImage: "url('https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2000&auto=format&fit=crop')",
+						filter: 'brightness(0.4) saturate(1.2)'
+					}} 
+				/>
+			</div>
+
+			{/* Modal do Cropper de Foto */}
 			{isCropping && (
-				<div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 overflow-y-auto pt-4 md:pt-10">
-					<div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={handleCropCancel} />
-					<div className="relative w-full max-w-lg mx-auto bg-zinc-950 border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-						<div className="p-5 border-b border-white/5 flex items-center justify-between bg-zinc-900/80">
+				<div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 overflow-y-auto pt-4 md:pt-10 backdrop-blur-md">
+					<div className="absolute inset-0 bg-black/60" onClick={handleCropCancel} />
+					<div className="relative w-full max-w-lg mx-auto bg-zinc-950/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+						<div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/5">
 							<div>
 								<h3 className="text-lg font-black text-white tracking-tight">Ajustar Foto de Perfil</h3>
-								<p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Recorte para enquadrar seu rosto</p>
+								<p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Recorte para enquadrar seu rosto</p>
 							</div>
 							<button type="button" onClick={handleCropCancel} className="p-3 text-zinc-500 hover:text-white bg-white/5 rounded-2xl transition-all">
 								<X size={20} />
 							</button>
 						</div>
-						<div className="relative h-[50vw] max-h-[380px] min-h-[260px] bg-zinc-950">
+						<div className="relative h-[50vw] max-h-[380px] min-h-[260px] bg-black/20">
 							<Cropper
 								image={photoPreview}
 								crop={crop}
@@ -252,24 +264,24 @@ const PublicRegistration = () => {
 								cropShape="round"
 								showGrid={false}
 								style={{
-									containerStyle: { backgroundColor: '#09090b' },
+									containerStyle: { backgroundColor: 'transparent' },
 									cropAreaStyle: { border: '2px solid rgba(255,255,255,0.5)' }
 								}}
 							/>
 						</div>
-						<div className="p-5 bg-zinc-900/80 border-t border-white/5">
-							<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-3">Zoom</label>
+						<div className="p-5 bg-white/5 border-t border-white/5">
+							<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-3 text-center">Ajuste o Zoom</label>
 							<input type="range" value={zoom} min={1} max={3} step={0.1}
 								aria-label="Zoom" onChange={(e) => setZoom(Number(e.target.value))}
-								className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-500 mb-6"
+								className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500 mb-6"
 							/>
 							<div className="flex gap-3">
 								<button type="button" onClick={handleCropCancel} disabled={isProcessingCrop}
-									className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 text-zinc-300 hover:bg-white/5 transition-all">
+									className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 text-zinc-300 hover:bg-white/10 transition-all">
 									Cancelar
 								</button>
 								<button type="button" onClick={handleCropConfirm} disabled={isProcessingCrop}
-									className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white hover:bg-emerald-500 transition-all flex items-center justify-center gap-2">
+									className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-500/20">
 									{isProcessingCrop
 										? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
 										: <><CropIcon size={16} /> Confirmar</>
@@ -280,249 +292,252 @@ const PublicRegistration = () => {
 					</div>
 				</div>
 			)}
-			{/* Banner Topo */}
-			<div className="w-full h-48 md:h-64 relative flex items-center justify-center overflow-hidden shrink-0">
-				<div className="absolute inset-0 bg-gradient-to-b from-blue-900/40 to-zinc-950 z-0" />
-				<div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center md:bg-[center_top_-200px] opacity-10 mix-blend-luminosity z-0" />
-				<div className="relative z-10 flex flex-col items-center mt-8">
-					<div className="w-20 h-20 bg-white/5 backdrop-blur-md rounded-[2rem] flex items-center justify-center border border-white/10 mb-4 p-4 shadow-2xl">
+
+			<div className="relative z-10 flex flex-col items-center">
+				{/* Header Imersivo */}
+				<div className="w-full py-12 md:py-20 flex flex-col items-center animate-in fade-in slide-in-from-top-10 duration-1000">
+					<div className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-center border border-white/20 mb-8 p-5 shadow-2xl transition-transform hover:scale-110">
 						{church.logo ? (
 							<img src={church.logo} className="w-full h-full object-contain" alt="Logo" />
 						) : (
-							<div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl">
+							<div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl shadow-xl">
 								{church.name.charAt(0)}
 							</div>
 						)}
 					</div>
-					<h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight text-center px-4 drop-shadow-md">
+					<h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter text-center px-4 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] max-w-3xl leading-none">
 						{church.name}
 					</h1>
+					<div className="h-1 w-20 bg-blue-500 mt-6 md:mt-8 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
 				</div>
-			</div>
 
-			{/* Formulário */}
-			<div className="flex-1 flex items-start justify-center p-4 sm:p-8 relative z-10 overflow-y-auto w-full">
-				<div className="w-full max-w-4xl bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-6 lg:p-10 shadow-2xl -mt-16 sm:-mt-24 mb-10 text-left">
-
-					<div className="mb-8 text-center">
-						<h2 className="text-xl font-black text-white uppercase tracking-tight">Ficha de Membro</h2>
-						<p className="text-zinc-400 text-xs font-medium uppercase tracking-widest mt-1">Preencha seus dados reais com atenção</p>
-					</div>
-
-
-					<form onSubmit={handleSubmit} className="space-y-8">
-						{/* Seção 1: Foto */}
-						<div className="flex flex-col items-center">
-							<div className="relative group cursor-pointer mb-2">
-								<div className={`w-36 h-36 rounded-full flex items-center justify-center border-2 border-dashed ${formData.avatar ? 'border-transparent' : 'border-zinc-700 bg-zinc-950'} overflow-hidden shadow-2xl transition-all group-hover:border-blue-500 group-hover:bg-blue-500/5`}>
-									{formData.avatar ? (
-										<img src={formData.avatar} className="w-full h-full object-cover rounded-full" alt="Sua Foto" />
-									) : (
-										<div className="flex flex-col items-center text-zinc-500 group-hover:text-blue-500 transition-colors">
-											<Camera size={32} className="mb-2" />
-											<span className="text-[9px] font-black uppercase tracking-widest text-center">Enviar<br />Foto</span>
-										</div>
-									)}
-								</div>
-								<label htmlFor="avatar-upload" className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
-									<Upload className="text-white mb-1" size={24} />
-									<span className="text-white text-[9px] font-black uppercase tracking-widest">Mudar Foto</span>
-								</label>
-								<input id="avatar-upload" type="file" accept="image/*" className="hidden" aria-hidden="true" onChange={handlePhotoSelect} />
-							</div>
-							<p className="text-[10px] text-rose-400 font-bold max-w-xs text-center">⚠️ A foto de perfil é OBRIGATÓRIA. Envie uma imagem nítida, de boa qualidade, apenas do seu rosto.</p>
+				{/* Formulário com Efeito de Vidro */}
+				<div className="w-full max-w-4xl px-4 sm:px-8 pb-20 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+					<div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-6 lg:p-16 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
+						<div className="mb-12 text-center">
+							<span className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-3 block">Ambiente de Cadastro</span>
+							<h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Ficha Ministerial</h2>
+							<p className="text-zinc-400 text-xs font-medium uppercase tracking-widest mt-2 opacity-60">Sincronizando seus dados com a rede local</p>
 						</div>
 
-						{/* Seção 2: Dados Básicos */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-zinc-950 rounded-3xl border border-white/5">
-							<div className="md:col-span-2 border-b border-white/5 pb-2">
-								<h3 className="text-xs font-black text-blue-500 uppercase tracking-widest">Informações Pessoais</h3>
+						<form onSubmit={handleSubmit} className="space-y-12">
+							{/* Seção 1: Foto */}
+							<div className="flex flex-col items-center">
+								<div className="relative group cursor-pointer mb-4">
+									<div className={`w-40 h-40 rounded-full flex items-center justify-center border-2 border-dashed ${formData.avatar ? 'border-transparent' : 'border-white/10 bg-white/5'} overflow-hidden shadow-2xl transition-all group-hover:border-blue-500 group-hover:bg-blue-500/10 backdrop-blur-md`}>
+										{formData.avatar ? (
+											<img src={formData.avatar} className="w-full h-full object-cover rounded-full" alt="Sua Foto" />
+										) : (
+											<div className="flex flex-col items-center text-zinc-500 group-hover:text-blue-400 transition-colors">
+												<Camera size={40} className="mb-2" />
+												<span className="text-[10px] font-black uppercase tracking-widest text-center">Enviar<br />Foto</span>
+											</div>
+										)}
+									</div>
+									<label htmlFor="avatar-upload" className="absolute inset-0 bg-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer backdrop-blur-sm">
+										<Upload className="text-white mb-1" size={24} />
+										<span className="text-white text-[10px] font-black uppercase tracking-widest">Mudar Foto</span>
+									</label>
+									<input id="avatar-upload" type="file" accept="image/*" className="hidden" aria-hidden="true" onChange={handlePhotoSelect} />
+								</div>
+								<div className="px-6 py-2 bg-rose-500/10 border border-rose-500/20 rounded-full">
+									<p className="text-[9px] text-rose-400 font-bold uppercase tracking-widest text-center italic">⚠️ A foto de perfil é obrigatória para identificação</p>
+								</div>
 							</div>
 
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nome Completo</label>
-								<div className="relative">
-									<User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium placeholder:text-zinc-600" placeholder="Nome Civil" />
+							{/* Seção 2: Dados Básicos */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+								<div className="md:col-span-2 flex items-center gap-4 text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">
+									<span className="shrink-0">Dados Pessoais</span>
+									<div className="h-px bg-white/10 w-full" />
 								</div>
-							</div>
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">CPF</label>
-								<div className="relative">
-									<ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input required value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium placeholder:text-zinc-600" placeholder="Apenas números" />
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Nome Civil Completo</label>
+									<div className="relative group">
+										<User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
+										<input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="Digite seu nome..." />
+									</div>
 								</div>
-							</div>
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Estado Civil</label>
-								<select value={formData.maritalStatus} onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-									<option value="" className="bg-zinc-950">Selecione...</option>
-									<option value="Solteiro(a)" className="bg-zinc-950">Solteiro(a)</option>
-									<option value="Casado(a)" className="bg-zinc-950">Casado(a)</option>
-									<option value="Divorciado(a)" className="bg-zinc-950">Divorciado(a)</option>
-									<option value="Viúvo(a)" className="bg-zinc-950">Viúvo(a)</option>
-								</select>
-							</div>
-							{formData.maritalStatus === 'Casado(a)' && (
-								<div className="space-y-2">
-									<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Cônjuge (Opcional)</label>
-									<select value={formData.spouseId} onChange={e => setFormData({ ...formData, spouseId: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-										<option value="" className="bg-zinc-950">Selecione se já for membro...</option>
-										{members
-											.filter(m => m.id !== formData.spouseId && m.maritalStatus === 'Casado(a)')
-											.map(m => <option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>)}
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Número do CPF</label>
+									<div className="relative group">
+										<ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
+										<input required value={formData.cpf} onChange={e => setFormData({ ...formData, cpf: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="000.000.000-00" />
+									</div>
+								</div>
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Estado Civil</label>
+									<select value={formData.maritalStatus} onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value="" className="bg-zinc-900">Selecione...</option>
+										<option value="Solteiro(a)" className="bg-zinc-900">Solteiro(a)</option>
+										<option value="Casado(a)" className="bg-zinc-900">Casado(a)</option>
+										<option value="Divorciado(a)" className="bg-zinc-900">Divorciado(a)</option>
+										<option value="Viúvo(a)" className="bg-zinc-900">Viúvo(a)</option>
 									</select>
 								</div>
-							)}
-						</div>
-
-						{/* Seção 3: Endereço */}
-						<div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-6 bg-zinc-950 rounded-3xl border border-white/5">
-							<div className="md:col-span-6 border-b border-white/5 pb-2">
-								<h3 className="text-xs font-black text-blue-500 uppercase tracking-widest">Endereço de Residência</h3>
+								{formData.maritalStatus === 'Casado(a)' && (
+									<div className="space-y-3">
+										<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Cônjuge (Se for membro)</label>
+										<select value={formData.spouseId} onChange={e => setFormData({ ...formData, spouseId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+											<option value="" className="bg-zinc-900">Selecione o cônjuge...</option>
+											{members
+												.filter(m => m.id !== formData.spouseId && m.maritalStatus === 'Casado(a)')
+												.map(m => <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>)}
+										</select>
+									</div>
+								)}
 							</div>
 
-							<div className="space-y-2 md:col-span-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">CEP</label>
-								<div className="relative">
-									<MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input value={formData.cep} onChange={handleCepChange} maxLength={9} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium placeholder:text-zinc-600" placeholder="00000000" />
-									{fetchingCep && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+							{/* Seção 3: Endereço */}
+							<div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+								<div className="md:col-span-6 flex items-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.3em]">
+									<span className="shrink-0">Endereço Residencial</span>
+									<div className="h-px bg-white/10 w-full" />
 								</div>
-							</div>
-							<div className="space-y-2 md:col-span-4">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Rua / Logradouro</label>
-								<div className="relative">
-									<Home size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" />
+
+								<div className="space-y-3 md:col-span-2">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">CEP</label>
+									<div className="relative group">
+										<MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" />
+										<input value={formData.cep} onChange={handleCepChange} maxLength={9} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="00000-000" />
+										{fetchingCep && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+									</div>
 								</div>
-							</div>
-							<div className="space-y-2 md:col-span-1">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Número</label>
-								<input value={formData.number} onChange={e => setFormData({ ...formData, number: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-4 text-sm text-center text-white focus:outline-none focus:border-blue-500 transition-all font-medium" />
-							</div>
-							<div className="space-y-2 md:col-span-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Complemento</label>
-								<div className="relative">
-									<Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input value={formData.complement} onChange={e => setFormData({ ...formData, complement: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" />
+								<div className="space-y-3 md:col-span-4">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Rua / Logradouro</label>
+									<div className="relative group">
+										<Home size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" />
+										<input value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="Nome da via..." />
+									</div>
 								</div>
-							</div>
-							<div className="space-y-2 md:col-span-3">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Bairro</label>
-								<div className="relative">
-									<Map size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input value={formData.neighborhood} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" />
+								<div className="space-y-3 md:col-span-2">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Número</label>
+									<input value={formData.number} onChange={e => setFormData({ ...formData, number: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="Ex: 123" />
 								</div>
-							</div>
-							<div className="space-y-2 md:col-span-5">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Cidade</label>
-								<input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" />
-							</div>
-							<div className="space-y-2 md:col-span-1">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">UF</label>
-								<input value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })} maxLength={2} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-4 text-sm text-center text-white focus:outline-none focus:border-blue-500 transition-all font-medium uppercase" />
-							</div>
-						</div>
-
-						{/* Seção 4: Eclesiástico */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-zinc-950 rounded-3xl border border-white/5">
-							<div className="md:col-span-2 border-b border-white/5 pb-2">
-								<h3 className="text-xs font-black text-blue-500 uppercase tracking-widest">Vínculo Espiritual</h3>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Origem / Como nos Conheceu?</label>
-								<select value={formData.origin} onChange={e => setFormData({ ...formData, origin: e.target.value as MemberOrigin })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-									<option value={MemberOrigin.EVANGELISM} className="bg-zinc-950">Evangelismo / Ganho</option>
-									<option value={MemberOrigin.CELL_VISIT} className="bg-zinc-950">Visita na Célula</option>
-									<option value={MemberOrigin.PRAYER_REQUEST} className="bg-zinc-950">Pedido de Oração (Telão)</option>
-									<option value={MemberOrigin.OTHER_CHURCH} className="bg-zinc-950">Vim de Outra Igreja</option>
-								</select>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Sua Célula de Frequência</label>
-								<select value={formData.cellId} onChange={e => setFormData({ ...formData, cellId: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-									<option value="" className="bg-zinc-950">Ainda não participo...</option>
-									{cells.map(c => <option key={c.id} value={c.id} className="bg-zinc-950">{c.name}</option>)}
-								</select>
-							</div>
-
-							<div className="space-y-2 md:col-span-1">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Discipulador(a) (Líder / Cuidador)</label>
-								<select value={formData.disciplerId} onChange={e => setFormData({ ...formData, disciplerId: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-									<option value="" className="bg-zinc-950">Não tenho / Não sei</option>
-									{members
-										.filter(m => m.role === UserRole.CELL_LEADER_DISCIPLE)
-										.map(m => <option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>)}
-								</select>
-							</div>
-
-							<div className="space-y-2 md:col-span-1">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Pastor(a) Direto</label>
-								<select value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium appearance-none">
-									<option value="" className="bg-zinc-950">Não tenho / Não sei</option>
-									{members
-										.filter(m => m.role === UserRole.PASTOR)
-										.map(m => <option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>)}
-								</select>
-							</div>
-						</div>
-
-						{/* Seção 5: Acesso */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-zinc-950 rounded-3xl border border-white/5">
-							<div className="md:col-span-2 border-b border-white/5 pb-2">
-								<h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest">Acesso ao Aplicativo</h3>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">WhatsApp</label>
-								<div className="relative">
-									<Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" placeholder="(00) 00000-0000" />
+								<div className="space-y-3 md:col-span-4">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Complemento / Bairro</label>
+									<div className="relative group">
+										<Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" />
+										<input value={`${formData.neighborhood}${formData.complement ? ' - ' + formData.complement : ''}`} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" />
+									</div>
+								</div>
+								<div className="space-y-3 md:col-span-4">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Cidade de Residência</label>
+									<input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-medium" />
+								</div>
+								<div className="space-y-3 md:col-span-2">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">UF</label>
+									<input value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })} maxLength={2} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-4 text-sm text-center text-white focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all font-bold uppercase" />
 								</div>
 							</div>
 
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-2">E-mail (Login de Acesso)</label>
-								<div className="relative">
-									<Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700 font-bold" />
-									<input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all font-bold placeholder:text-zinc-600" placeholder="Este será seu Login" />
+							{/* Seção 4: Eclesiástico */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+								<div className="md:col-span-2 flex items-center gap-4 text-amber-500 font-black text-[10px] uppercase tracking-[0.3em]">
+									<span className="shrink-0">Vida na Comunidade</span>
+									<div className="h-px bg-white/10 w-full" />
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Origem / Indicação</label>
+									<select value={formData.origin} onChange={e => setFormData({ ...formData, origin: e.target.value as MemberOrigin })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value={MemberOrigin.EVANGELISM} className="bg-zinc-900">Evangelismo / Ganho</option>
+										<option value={MemberOrigin.CELL_VISIT} className="bg-zinc-900">Visita na Célula</option>
+										<option value={MemberOrigin.PRAYER_REQUEST} className="bg-zinc-900">Pedido de Oração (Telão)</option>
+										<option value={MemberOrigin.OTHER_CHURCH} className="bg-zinc-900">Transmissão de Outra Igreja</option>
+									</select>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Célula Principal</label>
+									<select value={formData.cellId} onChange={e => setFormData({ ...formData, cellId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value="" className="bg-zinc-900">Ainda não participo...</option>
+										{cells.map(c => <option key={c.id} value={c.id} className="bg-zinc-900">{c.name}</option>)}
+									</select>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Líder Direto / Cuidado</label>
+									<select value={formData.disciplerId} onChange={e => setFormData({ ...formData, disciplerId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value="" className="bg-zinc-900">Não tenho / Não sei</option>
+										{members
+											.filter(m => m.role === UserRole.CELL_LEADER_DISCIPLE)
+											.map(m => <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>)}
+									</select>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Pastor(a) Supervisor</label>
+									<select value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value="" className="bg-zinc-900">Não tenho / Não sei</option>
+										{members
+											.filter(m => m.role === UserRole.PASTOR)
+											.map(m => <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>)}
+									</select>
 								</div>
 							</div>
 
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Criar Senha</label>
-								<div className="relative">
-									<Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" placeholder="••••••••" />
+							{/* Seção 5: Acesso Digital */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-10 bg-blue-500/5 rounded-[2.5rem] border border-blue-500/10">
+								<div className="md:col-span-2 flex items-center gap-4 text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">
+									<span className="shrink-0">Credenciais Digitais</span>
+									<div className="h-px bg-blue-500/20 w-full" />
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Seu WhatsApp</label>
+									<div className="relative group">
+										<Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
+										<input required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-zinc-950/40 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-all font-medium" placeholder="(00) 00000-0000" />
+									</div>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-2">E-mail (Será seu Login)</label>
+									<div className="relative group">
+										<Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 font-bold" />
+										<input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-emerald-500/5 border border-emerald-500/20 backdrop-blur-md rounded-2xl py-5 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all font-bold placeholder:text-zinc-700" placeholder="escolha@email.com" />
+									</div>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Nova Senha</label>
+									<div className="relative group">
+										<Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
+										<input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full bg-zinc-950/40 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-all font-medium placeholder:text-zinc-700" placeholder="••••••••" />
+									</div>
+								</div>
+
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Confirme a Senha</label>
+									<div className="relative group">
+										<Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
+										<input type="password" required value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} className="w-full bg-zinc-950/40 border border-white/5 backdrop-blur-md rounded-2xl py-5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-all font-medium placeholder:text-zinc-700" placeholder="••••••••" />
+									</div>
 								</div>
 							</div>
 
-							<div className="space-y-2">
-								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Repetir Senha</label>
-								<div className="relative">
-									<Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-									<input type="password" required value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium" placeholder="••••••••" />
-								</div>
-							</div>
-						</div>
+							<button
+								type="submit"
+								disabled={submitting}
+								className="w-full py-6 bg-blue-600 text-white rounded-[2rem] text-sm font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_-10px_rgba(59,130,246,0.5)] hover:bg-blue-500 transition-all flex items-center justify-center gap-4 disabled:opacity-50 group hover:scale-[1.02] active:scale-95 duration-200 mt-12 mb-4"
+							>
+								{submitting ? (
+									<div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+								) : (
+									<>
+										<UserPlus size={22} className="group-hover:rotate-12 transition-transform" /> 
+										Finalizar Cadastro Oficial
+									</>
+								)}
+							</button>
 
-						<button
-							type="submit"
-							disabled={submitting}
-							className="w-full py-5 bg-blue-600 text-white rounded-2xl text-[12px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 group hover:scale-[1.02] active:scale-95 duration-200 mt-10"
-						>
-							{submitting ? (
-								<div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-							) : (
-								<>
-									<UserPlus size={20} /> Finalizar Cadastro Oficial
-								</>
-							)}
-						</button>
-					</form>
+							<p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-widest opacity-60">
+								Ao confirmar, seus dados serão enviados sob criptografia end-to-end.
+							</p>
+						</form>
+					</div>
 				</div>
 			</div>
 		</div>
