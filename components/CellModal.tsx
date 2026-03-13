@@ -160,7 +160,16 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 					.from('cell_logos')
 					.upload(fileName, selectedFile);
 
-				if (uploadError) throw uploadError;
+				if (uploadError) {
+					console.error('Erro de Storage:', uploadError);
+					if (uploadError.message.includes('Bucket not found') || uploadError.message === 'The resource was not found') {
+						throw new Error('O bucket "cell_logos" não existe no Supabase. Por favor, crie um bucket público chamado "cell_logos" no Storage.');
+					}
+					if (uploadError.message.includes('row-level security policy') || uploadError.message.includes('permission denied')) {
+						throw new Error('Falta permissão no Supabase. Acesse Storage > cell_logos -> Policies e adicione uma política permitindo INSERT/UPDATE para todos (ou para usuários autenticados).');
+					}
+					throw new Error(`Erro ao enviar imagem: ${uploadError.message}`);
+				}
 
 				const { data: { publicUrl } } = supabase.storage
 					.from('cell_logos')
@@ -180,9 +189,10 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 				address: fullAddress
 			});
 			onClose();
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Erro ao salvar célula:', error);
-			alert('Erro ao salvar os dados da célula.');
+			const errorMessage = error?.message || 'Erro ao salvar os dados da célula.';
+			alert(errorMessage);
 		} finally {
 			setLoading(false);
 		}

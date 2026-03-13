@@ -209,9 +209,10 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 
 			await onSave(finalFormData);
 			onClose();
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Erro ao salvar membro:', error);
-			alert('Erro ao salvar os dados do membro.');
+			const errorMessage = error?.message || 'Erro ao salvar os dados do membro.';
+			alert(errorMessage);
 		} finally {
 			setSaving(false);
 		}

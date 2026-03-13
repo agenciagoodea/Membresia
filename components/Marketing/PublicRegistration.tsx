@@ -183,9 +183,10 @@ const PublicRegistration = () => {
 			} as any);
 
 			setSuccess(true);
-		} catch (err) {
+		} catch (err: any) {
 			console.error(err);
-			alert("Houve um erro ao processar seu cadastro. Pode ser que o e-mail ou CPF já estejam em uso.");
+			const errorMessage = err?.message || "Houve um erro ao processar seu cadastro. Pode ser que o e-mail ou CPF já estejam em uso.";
+			alert(errorMessage);
 		} finally {
 			setSubmitting(false);
 		}

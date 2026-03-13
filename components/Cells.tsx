@@ -96,11 +96,20 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
       if (photoFile) {
         const fileExt = photoFile.name.split('.').pop();
         const fileName = `${cell.id}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('cell_reports')
-          .upload(fileName, photoFile);
+				const { error: uploadError } = await supabase.storage
+					.from('cell_reports')
+					.upload(fileName, photoFile);
 
-        if (uploadError) throw uploadError;
+				if (uploadError) {
+					console.error('Erro de Storage:', uploadError);
+					if (uploadError.message.includes('Bucket not found') || uploadError.message === 'The resource was not found') {
+						throw new Error('O bucket "cell_reports" não existe no Supabase. Por favor, crie um bucket público chamado "cell_reports" no Storage.');
+					}
+					if (uploadError.message.includes('row-level security policy') || uploadError.message.includes('permission denied')) {
+						throw new Error('Falta permissão no Supabase. Acesse Storage > cell_reports -> Policies e adicione uma política permitindo INSERT/UPDATE para todos (ou para usuários autenticados).');
+					}
+					throw new Error(`Erro ao enviar imagem: ${uploadError.message}`);
+				}
         const { data: { publicUrl } } = supabase.storage.from('cell_reports').getPublicUrl(fileName);
         photoUrl = publicUrl;
       }
@@ -136,9 +145,10 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
 
       setPhotoFile(null);
       setPresentMemberIds(new Set());
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar relatório:', error);
-      alert('Erro ao salvar relatório. Verifique se o bucket cell_reports existe.');
+      const errorMessage = error?.message || 'Erro ao salvar relatório.';
+      alert(errorMessage);
     }
   };
 

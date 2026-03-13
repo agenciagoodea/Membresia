@@ -117,8 +117,11 @@ export const memberService = {
 				}
 			});
 
-			if (authError && !authError.message.includes('already registered')) {
+			if (authError) {
 				console.error('Erro ao registrar no Auth:', authError.message);
+				if (authError.message.includes('already registered')) {
+					throw new Error('Este e-mail já está cadastrado no sistema.');
+				}
 				throw new Error(`Falha na autenticação: ${authError.message}`);
 			}
 		}
