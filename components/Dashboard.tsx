@@ -42,8 +42,8 @@ import {
   Bar,
   Cell as RechartsCell
 } from 'recharts';
-import { MOCK_TENANT, MOCK_MEMBERS, MOCK_CELLS, MOCK_PRAYER_REQUESTS, PLAN_CONFIGS } from '../constants';
-import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest } from '../types';
+import { MOCK_TENANT, PLAN_CONFIGS } from '../constants';
+import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest, PlanType } from '../types';
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
 import { prayerService } from '../services/prayerService';
@@ -169,7 +169,7 @@ const MasterDashboard = () => (
 );
 
 const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], cells: Cell[], prayers: PrayerRequest[] }) => {
-  const planLimits = PLAN_CONFIGS[MOCK_TENANT.plan];
+  const planLimits = PLAN_CONFIGS[PlanType.PRO]; // Fallback para PRO enquanto não carregamos detalhes da igreja
   const totalMembers = members.length;
   const activeCells = cells.length;
   const memberPercent = (totalMembers / planLimits.maxMembers) * 100;
@@ -179,10 +179,10 @@ const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], 
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
       <PageHeader
         title="Painel Administrativo"
-        subtitle={`Gerenciamento operacional da ${MOCK_TENANT.name}.`}
+        subtitle="Gerenciamento operacional e supervisão."
         actions={
           <span className="w-full md:w-auto text-center px-5 py-2.5 bg-blue-600/10 text-blue-500 rounded-2xl text-[10px] font-black border border-blue-500/20 uppercase tracking-widest">
-            PLANO {MOCK_TENANT.plan}
+            ACESSO ADMINISTRATIVO
           </span>
         }
       />
@@ -613,12 +613,22 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
 
   useEffect(() => {
     const loadData = async () => {
+      // Se não temos church_id e o usuário não é Master Admin, não há o que carregar
+      if (!user?.church_id && user?.role !== UserRole.MASTER_ADMIN) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
+        // Para Master Admin, talvez precisemos de uma lógica diferente no futuro (ver todas as igrejas)
+        // Por ora, usamos o church_id do perfil se existir
+        const currentChurchId = user?.church_id || MOCK_TENANT.id;
+
         const [mTable, cTable, pTable] = await Promise.all([
-          memberService.getAll(MOCK_TENANT.id),
-          cellService.getAll(MOCK_TENANT.id),
-          prayerService.getAll(MOCK_TENANT.id)
+          memberService.getAll(currentChurchId),
+          cellService.getAll(currentChurchId),
+          prayerService.getAll(currentChurchId)
         ]);
         setMembers(mTable);
         setCells(cTable);
@@ -630,7 +640,7 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
       }
     };
     loadData();
-  }, []);
+  }, [user]);
 
   if (loading && user.role !== UserRole.MASTER_ADMIN) {
     return (

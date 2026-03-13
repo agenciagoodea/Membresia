@@ -31,8 +31,7 @@ import {
   MASTER_NAV_ITEMS,
   PASTOR_NAV_ITEMS,
   LEADER_NAV_ITEMS,
-  MEMBER_NAV_ITEMS,
-  MOCK_TENANT
+  MEMBER_NAV_ITEMS
 } from './constants';
 import { UserRole, PrayerStatus } from './types';
 import { supabase } from './services/supabaseClient';
@@ -270,35 +269,44 @@ const App: React.FC = () => {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Inicializar sessão
-    const initSession = async () => {
+    // Timer de segurança para não travar no loading
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    const initAuth = async () => {
       try {
         const sessionData = await authService.getSession();
         if (sessionData?.profile) {
           setCurrentUser(sessionData.profile);
         }
       } catch (err) {
-        console.error('Erro ao inicializar sessão:', err);
+        console.error('Erro na inicialização de Auth:', err);
       } finally {
         setLoading(false);
+        clearTimeout(safetyTimer);
       }
     };
 
-    initSession();
+    initAuth();
 
-    // Ouvir mudanças de auth
     const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
-      console.log('Auth Event:', event);
-      if (session?.user?.email) {
-        const profile = await memberService.getByEmail(session.user.email);
-        setCurrentUser(profile);
+      console.log('Evento de Autenticação:', event);
+      
+      if (event === 'SIGNED_IN') {
+        if (session?.user?.email) {
+          const profile = await memberService.getByEmail(session.user.email);
+          setCurrentUser(profile);
+        }
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
+        setLoading(false);
       }
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(safetyTimer);
     };
   }, []);
 

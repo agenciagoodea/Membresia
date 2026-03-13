@@ -184,8 +184,7 @@ export const memberService = {
 		const { data, error } = await supabase
 			.from('members')
 			.select('*')
-			.ilike('email', email.trim())
-			.limit(1)
+			.eq('email', email.trim().toLowerCase())
 			.maybeSingle();
 
 		if (error) {
