@@ -114,7 +114,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
         const origin = formData.origin || MemberOrigin.OTHER_CHURCH;
         const created = await memberService.create({
           ...finalFormData,
-          church_id: user.church_id,
+          church_id: user.churchId || user.church_id,
           joinedDate: new Date().toISOString(),
           origin: origin,
           completedMilestones:

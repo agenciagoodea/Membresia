@@ -708,7 +708,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
       } else {
         await cellService.create({
           ...formData,
-          church_id: user.church_id,
+          church_id: user.churchId || user.church_id,
           status: 'ACTIVE'
         });
       }

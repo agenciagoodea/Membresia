@@ -21,7 +21,8 @@ const MyCellDetail: React.FC<{ user: any }> = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const churchId = user?.church_id;
+    const churchId = user?.churchId || user?.church_id;
+    if (!churchId) return;
     const cellId = user?.cellId;
     if (!churchId || !cellId) {
       setLoading(false);
