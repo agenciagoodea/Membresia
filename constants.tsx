@@ -62,7 +62,7 @@ export const MASTER_NAV_ITEMS = [
 
 // CHURCH LEVEL (Pastor / Admin)
 export const PASTOR_NAV_ITEMS = [
-  { id: 'dashboard', label: 'Painel Pastoral', icon: <LayoutDashboard size={20} /> },
+  { id: 'dashboard', label: 'PAINEL TESTE', icon: <LayoutDashboard size={20} /> },
   { id: 'members', label: 'Membros & Líderes', icon: <Users size={20} /> },
   { id: 'cells', label: 'Gestão de Células', icon: <Layers size={20} /> },
   { id: 'ladder', label: 'Escada do Sucesso', icon: <TrendingUp size={20} /> },
