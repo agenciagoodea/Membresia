@@ -1,222 +1,182 @@
-
 import React, { useState, useEffect } from 'react';
-import {
-  Users,
-  Layers,
-  TrendingUp,
-  Heart,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreVertical,
-  Globe,
-  DollarSign,
-  PieChart,
-  ShieldAlert,
-  Zap,
-  Target,
-  Clock,
-  Calendar,
-  MapPin,
-  CheckCircle2,
-  ShieldCheck,
-  ArrowRight,
-  Map,
-  X,
-  Bell,
-  Activity,
+import { 
+  Users, 
+  Layers, 
+  TrendingUp, 
+  Calendar, 
+  Target, 
+  Heart, 
+  Activity, 
+  Zap, 
   ChevronRight,
-  Mail,
-  Phone,
-  Lock
+  Clock,
+  MapPin,
+  MessageSquare,
+  Sparkles,
+  CheckCircle2,
+  X,
+  Plus
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  Cell as RechartsCell
+  Cell as RechartsCell 
 } from 'recharts';
-import { PLAN_CONFIGS } from '../constants';
-import { LadderStage, UserRole, PrayerStatus, Member, Cell, PrayerRequest, PlanType } from '../types';
-import { memberService } from '../services/memberService';
-import { cellService } from '../services/cellService';
-import { prayerService } from '../services/prayerService';
-import { churchService } from '../services/churchService';
-import PageHeader from './Shared/PageHeader';
-import MyProgress from './Member/MyProgress';
-import MyCellDetail from './Member/MyCellDetail';
-import PrayerHistory from './Member/PrayerHistory';
-import PrayerForm from './Prayer/PrayerForm';
 import { useChurch } from '../contexts/ChurchContext';
+import { UserRole, LadderStage, PrayerStatus, Member, Cell, PrayerRequest } from '../types';
+import { PLAN_CONFIGS, PlanType } from '../constants';
+import { memberService } from '../services/memberService';
+import { useLocation } from 'react-router-dom';
+import PrayerForm from './Prayers/PrayerForm';
 
-
-const dataGrowth = [
-  { name: 'Jan', members: 380, revenue: 12000 },
-  { name: 'Fev', members: 395, revenue: 13500 },
-  { name: 'Mar', members: 410, revenue: 14200 },
-  { name: 'Abr', members: 405, revenue: 13800 },
-  { name: 'Mai', members: 425, revenue: 15500 },
-  { name: 'Jun', members: 450, revenue: 18000 },
-];
-
-
-const StatCard = ({ title, value, trend, icon, color, subValue }: any) => (
-  <div className="bg-zinc-900 p-8 rounded-[2rem] border border-white/5 shadow-2xl hover:bg-zinc-800 transition-all group overflow-hidden relative">
-    <div className="flex justify-between items-start mb-6">
-      <div className={`p-4 rounded-2xl ${color} shadow-lg shadow-black/20`}>
-        {icon}
-      </div>
-      <button className="text-zinc-600 hover:text-zinc-300">
-        <MoreVertical size={20} />
-      </button>
+// Componentes Auxiliares
+const PageHeader = ({ title, subtitle, actions }: { title: string, subtitle: string, actions?: React.ReactNode }) => (
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+    <div>
+      <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none mb-3">
+        {title}
+      </h1>
+      <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] md:text-xs italic">
+        {subtitle}
+      </p>
     </div>
-    <p className="text-zinc-500 text-xs font-black uppercase tracking-[0.15em] mb-2">{title}</p>
-    <div className="flex items-baseline gap-3">
-      <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
-      {subValue && <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">{subValue}</span>}
-    </div>
-    {trend !== undefined && (
-      <div className="flex items-center gap-2 mt-4">
-        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${trend > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-          {trend > 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />} {Math.abs(trend)}%
-        </div>
-        <span className="text-zinc-600 text-[10px] font-bold uppercase">vs mês passado</span>
-      </div>
-    )}
+    {actions}
   </div>
 );
-const MasterDashboard = () => {
-  const [churches, setChurches] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    churchService.list().then((data: any[]) => {
-      if (!cancelled) { setChurches(data || []); setLoading(false); }
-    }).catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+const StatCard = ({ title, value, trend, subValue, icon, color }: { title: string, value: string | number, trend?: number, subValue?: string, icon: React.ReactNode, color: string }) => (
+  <div className="bg-zinc-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
+    <div className={`absolute -right-4 -top-4 w-24 h-24 ${color} rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity`} />
+    <div className="flex justify-between items-start mb-6 relative">
+      <div className={`p-4 rounded-2xl ${color} text-white`}>
+        {icon}
+      </div>
+      {trend && (
+        <span className={`text-[10px] font-black px-3 py-1.5 rounded-full ${trend > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'} uppercase tracking-widest`}>
+          {trend > 0 ? '+' : ''}{trend}%
+        </span>
+      )}
+    </div>
+    <div className="relative">
+      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">{title}</p>
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-4xl font-black text-white tracking-tighter">{value}</h3>
+        {subValue && <span className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">{subValue}</span>}
+      </div>
+    </div>
+  </div>
+);
 
-  const totalMembers = churches.reduce((s, c) => s + (c.stats?.totalMembers || 0), 0);
-  const totalCells   = churches.reduce((s, c) => s + (c.stats?.activeCells   || 0), 0);
+const MasterDashboard = () => (
+  <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
+    <PageHeader 
+      title="Global Overview" 
+      subtitle="Ecossistema completo de gestão eclesiástica."
+      actions={
+        <div className="flex items-center gap-3">
+          <div className="px-5 py-3 bg-white text-zinc-950 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all cursor-pointer shadow-xl shadow-white/5">
+            Relatório Consolidado
+          </div>
+        </div>
+      }
+    />
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <StatCard title="Igrejas Ativas" value="124" trend={15} icon={<Layers size={24} />} color="bg-blue-600/20" />
+      <StatCard title="Total Membros" value="12.4k" trend={8} icon={<Users size={24} />} color="bg-indigo-600/20" />
+      <StatCard title="Assinaturas Ativas" value="98" trend={12} icon={<Zap size={24} />} color="bg-amber-600/20" />
+      <StatCard title="Receita Global" value="R$ 45k" trend={22} icon={<Activity size={24} />} color="bg-emerald-600/20" />
+    </div>
 
-  // Distribuição de planos
-  const planCount: Record<string, number> = {};
-  churches.forEach(c => { planCount[c.plan] = (planCount[c.plan] || 0) + 1; });
-  const planColors: Record<string, string> = { enterprise: 'bg-indigo-600', pro: 'bg-blue-600', basic: 'bg-zinc-400' };
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="lg:col-span-2 bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+        <div className="flex items-center justify-between mb-12">
+          <h4 className="font-black text-white text-xl flex items-center gap-4 uppercase tracking-tighter">
+            <div className="w-1.5 h-6 bg-blue-600 rounded-full" /> Crescimento da Rede
+          </h4>
+          <select className="bg-zinc-950 text-white border border-white/5 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none">
+            <option>Últimos 12 Meses</option>
+            <option>Este Ano</option>
+          </select>
+        </div>
+        <div className="h-[350px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={[
+              { name: 'Jan', val: 400 }, { name: 'Fev', val: 300 }, { name: 'Mar', val: 600 },
+              { name: 'Abr', val: 800 }, { name: 'Mai', val: 500 }, { name: 'Jun', val: 900 },
+              { name: 'Jul', val: 1100 }, { name: 'Ago', val: 1300 }, { name: 'Set', val: 1200 },
+              { name: 'Out', val: 1500 }, { name: 'Nov', val: 1800 }, { name: 'Dez', val: 2100 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#52525b', fontSize: 11, fontWeight: 'bold' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525b', fontSize: 11, fontWeight: 'bold' }} />
+              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '12px' }} />
+              <Bar dataKey="val" fill="#2563eb" radius={[12, 12, 4, 4]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-black p-12 rounded-[3rem] text-white shadow-2xl relative overflow-hidden h-full flex flex-col justify-between group">
+          <div className="absolute -top-10 -right-10 opacity-10 group-hover:rotate-12 transition-transform duration-700"><Zap size={250} /></div>
+          <div>
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md">
+              <Sparkles size={32} className="text-indigo-300" />
+            </div>
+            <h4 className="text-4xl font-black mb-4 tracking-tighter uppercase leading-[0.9]">Upgrade <br />Enterprise</h4>
+            <p className="text-indigo-200 text-sm mb-12 font-bold uppercase tracking-widest italic leading-relaxed opacity-60">Implementando IA para detecção de tendências de evasão e engajamento.</p>
+          </div>
+          <button className="w-full py-5 bg-white text-zinc-950 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-white/5">
+            Configurar Módulos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const DashboardEventsWidget = ({ events }: { events: any[] }) => {
+  const upcoming = events
+    .filter(e => e.date >= new Date().toISOString().split('T')[0])
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 3);
+
+  if (upcoming.length === 0) return null;
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
-      <PageHeader
-        title="Global Control"
-        subtitle="Visão estratégica e saúde do ecossistema SaaS."
-        actions={
-          <div className="flex w-full md:w-auto items-center justify-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl shadow-2xl">
-            <Activity size={14} className="text-emerald-500 animate-pulse" /> INFRA ESTRUTURA ONLINE
-          </div>
-        }
-      />
-
-      {loading ? (
-        <div className="py-20 text-center text-zinc-500 font-black uppercase tracking-[0.5em] animate-pulse">Sincronizando...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <StatCard title="Total de Igr. / Clientes" value={churches.length} icon={<Globe className="text-blue-400" />} color="bg-blue-500/10" />
-            <StatCard title="Total de Membros" value={totalMembers} icon={<Users className="text-emerald-400" />} color="bg-emerald-500/10" />
-            <StatCard title="Células Ativas" value={totalCells} icon={<Layers className="text-amber-400" />} color="bg-amber-500/10" />
-            <StatCard title="Planos Ativos" value={Object.values(planCount).reduce((a, b) => a + b, 0)} icon={<Zap className="text-rose-400" />} color="bg-rose-500/10" />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Lista de Igrejas */}
-            <div className="lg:col-span-2 bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
-              <h4 className="font-black text-white text-xl mb-8 flex items-center gap-4 uppercase tracking-tighter">
-                <div className="w-1.5 h-6 bg-blue-600 rounded-full" /> Igrejas Cadastradas
-              </h4>
-              {churches.length === 0 ? (
-                <p className="text-zinc-600 text-center py-10 font-black uppercase tracking-widest text-[10px]">Nenhuma igreja cadastrada ainda</p>
-              ) : (
-                <div className="space-y-4">
-                  {churches.map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-4 bg-zinc-950 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
-                      <div className="flex items-center gap-4">
-                        {c.logo ? (
-                          <img src={c.logo} className="w-10 h-10 rounded-xl object-cover" alt={c.name} />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm">
-                            {c.name?.charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-bold text-white">{c.name}</p>
-                          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tight">{c.slug}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-5 text-right">
-                        <div>
-                          <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Membros</p>
-                          <p className="text-sm font-black text-white">{c.stats?.totalMembers || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Células</p>
-                          <p className="text-sm font-black text-white">{c.stats?.activeCells || 0}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          c.plan === 'enterprise' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                          : c.plan === 'pro' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                          : 'bg-zinc-700/50 text-zinc-400 border border-zinc-600/20'
-                        }`}>{c.plan || 'basic'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+    <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+      <h4 className="font-black text-white text-xl mb-8 flex items-center gap-4 uppercase tracking-tighter">
+        <div className="w-1.5 h-6 bg-amber-500 rounded-full" /> Próximos Eventos
+      </h4>
+      <div className="space-y-4">
+        {upcoming.map(evt => (
+          <div key={evt.id} className="flex items-center gap-4 p-4 bg-zinc-950 rounded-2xl border border-white/5">
+            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col items-center justify-center shrink-0">
+              <span className="text-sm font-black text-amber-500 leading-none">{evt.date.split('-')[2]}</span>
+              <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">{new Date(evt.date).toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}</span>
             </div>
-
-            {/* SaaS Health */}
-            <div className="bg-zinc-100 p-10 rounded-[3rem] text-zinc-950 shadow-2xl relative overflow-hidden flex flex-col justify-between">
-              <div className="absolute top-0 right-0 p-8 opacity-5"><PieChart size={180} /></div>
-              <div>
-                <Zap size={48} className="mb-8 text-blue-600 fill-blue-600/20" />
-                <h4 className="text-3xl font-black mb-2 tracking-tighter">SaaS Health</h4>
-                <p className="text-zinc-500 text-sm mb-12 font-bold uppercase tracking-widest">Carga por Plano</p>
-                <div className="space-y-8">
-                  {Object.keys(planColors).map(plan => {
-                    const count = planCount[plan] || 0;
-                    const total = churches.length || 1;
-                    const pct = Math.round((count / total) * 100);
-                    return (
-                      <div key={plan}>
-                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">
-                          <span>{plan}</span>
-                          <span>{pct}%</span>
-                        </div>
-                        <div className="w-full bg-zinc-950/5 h-2 rounded-full overflow-hidden">
-                          <div className={`${planColors[plan]} h-full rounded-full transition-all duration-1000`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white truncate">{evt.title}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Clock size={10} className="text-zinc-600" />
+                <span className="text-[10px] text-zinc-500 font-bold uppercase">{evt.time || 'Horário não definido'}</span>
               </div>
-              <button className="mt-12 w-full py-5 bg-zinc-950 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all">Rel. Completo</button>
             </div>
           </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
 
-const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], cells: Cell[], prayers: PrayerRequest[] }) => {
-  const planLimits = PLAN_CONFIGS[PlanType.PRO]; // Fallback para PRO enquanto não carregamos detalhes da igreja
+const ChurchAdminDashboard = ({ members, cells, prayers, events }: { members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[] }) => {
+  const planLimits = PLAN_CONFIGS[PlanType.PRO];
   const totalMembers = members.length;
   const activeCells = cells.length;
   const memberPercent = (totalMembers / planLimits.maxMembers) * 100;
@@ -234,10 +194,11 @@ const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], 
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <StatCard title="Membros Cadastrados" value={totalMembers} subValue={`/ ${planLimits.maxMembers}`} trend={totalMembers > 0 ? 100 : 0} icon={<Users className="text-blue-400" />} color="bg-blue-500/10" />
-        <StatCard title="Células Ativas" value={activeCells} subValue={`/ ${planLimits.maxCells}`} trend={activeCells > 0 ? 100 : 0} icon={<Layers className="text-indigo-400" />} color="bg-indigo-500/10" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <StatCard title="Membros Cadastrados" value={totalMembers} subValue={`/ ${planLimits.maxMembers}`} icon={<Users className="text-blue-400" />} color="bg-blue-500/10" />
+        <StatCard title="Células Ativas" value={activeCells} subValue={`/ ${planLimits.maxCells}`} icon={<Layers className="text-indigo-400" />} color="bg-indigo-500/10" />
         <StatCard title="Orações Pendentes" value={prayers.filter(p => p.status === PrayerStatus.PENDING).length} subValue="pedidos" icon={<Clock className="text-amber-400" />} color="bg-amber-500/10" />
+        <StatCard title="Eventos na Agenda" value={events.length} subValue="Totais" icon={<Calendar className="text-emerald-400" />} color="bg-emerald-500/10" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -266,10 +227,9 @@ const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], 
               </div>
             </div>
           </div>
-          <button className="mt-12 w-full py-4 bg-zinc-800 text-zinc-300 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 hover:bg-zinc-700 transition-all flex items-center justify-center gap-3">
-            UPGRADE DISPONÍVEL <ArrowRight size={14} />
-          </button>
         </div>
+
+        <DashboardEventsWidget events={events} />
 
         <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
           <h4 className="font-black text-white text-xl mb-10 flex items-center gap-4 uppercase tracking-tighter">
@@ -302,7 +262,7 @@ const ChurchAdminDashboard = ({ members, cells, prayers }: { members: Member[], 
   );
 };
 
-const PastorDashboard = ({ members, cells, prayers }: { members: Member[], cells: Cell[], prayers: PrayerRequest[] }) => {
+const PastorDashboard = ({ members, cells, prayers, events }: { members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[] }) => {
   const ladderDist = [
     { stage: 'Ganhar', count: members.filter(m => m.stage === LadderStage.WIN).length, color: '#3b82f6' },
     { stage: 'Consolidar', count: members.filter(m => m.stage === LadderStage.CONSOLIDATE).length, color: '#10b981' },
@@ -317,7 +277,7 @@ const PastorDashboard = ({ members, cells, prayers }: { members: Member[], cells
         subtitle="Indicadores de saúde espiritual e crescimento."
         actions={
           <div className="flex w-full md:w-auto items-center justify-center gap-3 text-[10px] font-black text-zinc-400 bg-zinc-900 border border-white/5 px-5 py-3 rounded-2xl">
-            <Calendar size={14} className="text-blue-500" /> JUNHO 2024
+            <Calendar size={14} className="text-blue-500" /> {new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}
           </div>
         }
       />
@@ -369,19 +329,20 @@ const PastorDashboard = ({ members, cells, prayers }: { members: Member[], cells
                   </div>
                   <div className="w-full bg-white/5 h-3 rounded-full overflow-hidden border border-white/5">
                     <div className="bg-indigo-500 h-full rounded-full shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all duration-1000" style={{ width: `${meta.val}%` }}></div>
-                  </div>
+                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        <DashboardEventsWidget events={events} />
       </div>
     </div>
   );
 };
 
-const LeaderDashboard = ({ user, members, cells }: { user: any, members: Member[], cells: Cell[] }) => {
-  const myChurchId = user?.churchId || user?.church_id;
+const LeaderDashboard = ({ user, members, cells, events }: { user: any, members: Member[], cells: Cell[], events: any[] }) => {
   const myCell = cells.find(c => c.leaderId === user.id) || (cells.length > 0 ? cells[0] : null);
   
   if (!myCell) return (
@@ -430,6 +391,9 @@ const LeaderDashboard = ({ user, members, cells }: { user: any, members: Member[
             ))}
           </div>
         </div>
+
+        <DashboardEventsWidget events={events} />
+
         <div className="bg-zinc-950 p-10 rounded-[3rem] border border-white/5 border-dashed relative">
           <h4 className="font-black text-white text-xl mb-10 flex items-center gap-4 uppercase tracking-tighter">
             <div className="w-1.5 h-6 bg-blue-600 rounded-full" /> Próxima Reunião
@@ -459,7 +423,7 @@ const LeaderDashboard = ({ user, members, cells }: { user: any, members: Member[
   );
 };
 
-const MemberDashboard = ({ user, prayers, activeTab = 'JOURNEY' }: { user: any, prayers: PrayerRequest[], activeTab?: string }) => {
+const MemberDashboard = ({ user, prayers, events, activeTab = 'JOURNEY' }: { user: any, prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
   const [mentors, setMentors] = useState<{ leader?: Member, pastor?: Member }>({});
   const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
   const location = useLocation();
@@ -605,33 +569,9 @@ const MemberDashboard = ({ user, prayers, activeTab = 'JOURNEY' }: { user: any, 
                 </button>
               </div>
 
-              {/* CARD DE NOTÍCIAS (TERCEIRO CAMPO) */}
-              <div className="bg-zinc-900 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col relative overflow-hidden group">
-                <div className="absolute -top-10 -right-10 opacity-5 group-hover:opacity-10 transition-opacity"><Bell size={200} /></div>
-                <h4 className="font-black text-white text-xl mb-10 flex items-center gap-4 uppercase tracking-tighter">
-                  <div className="w-1.5 h-6 bg-amber-500 rounded-full" /> Notícias & Eventos
-                </h4>
-                <div className="space-y-6 flex-1">
-                  <div className="p-5 bg-zinc-950 rounded-2xl border border-white/5 hover:bg-zinc-800 transition-all cursor-pointer">
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black rounded-full uppercase tracking-widest">Destaque</span>
-                      <span className="text-[9px] text-zinc-600 font-bold uppercase">15 Jun</span>
-                    </div>
-                    <p className="text-sm font-black text-white uppercase leading-tight mb-2">Conferência de Células: Frutos do Espírito</p>
-                    <p className="text-[10px] text-zinc-500 font-bold leading-relaxed">Prepare-se para um tempo sobrenatural com toda a nossa liderança...</p>
-                  </div>
-                  <div className="p-5 bg-zinc-950 rounded-2xl border border-white/5 hover:bg-zinc-800 transition-all cursor-pointer">
-                    <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-2">Aviso Ministerial</p>
-                    <p className="text-sm font-bold text-zinc-200 leading-tight">Batismo nas Águas em Agosto. Inscrições abertas no site.</p>
-                  </div>
-                </div>
-                <button className="w-full py-5 bg-zinc-950 border border-white/10 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 hover:text-white transition-all mt-4">
-                  Ver Todas
-                </button>
-              </div>
+              <DashboardEventsWidget events={events} />
             </div>
 
-            {/* Modal de Oração Inline */}
             {isPrayerModalOpen && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsPrayerModalOpen(false)} />
@@ -664,7 +604,7 @@ const MemberDashboard = ({ user, prayers, activeTab = 'JOURNEY' }: { user: any, 
 };
 
 const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTab }) => {
-  const { members, cells, prayers, loading } = useChurch();
+  const { members, cells, prayers, events, loading } = useChurch();
 
   if (loading && user.role !== UserRole.MASTER_ADMIN) {
     return (
@@ -680,13 +620,13 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
     case UserRole.MASTER_ADMIN:
       return <MasterDashboard />;
     case UserRole.CHURCH_ADMIN:
-      return <ChurchAdminDashboard members={members} cells={cells} prayers={prayers} />;
+      return <ChurchAdminDashboard members={members} cells={cells} prayers={prayers} events={events} />;
     case UserRole.PASTOR:
-      return <PastorDashboard members={members} cells={cells} prayers={prayers} />;
+      return <PastorDashboard members={members} cells={cells} prayers={prayers} events={events} />;
     case UserRole.CELL_LEADER_DISCIPLE:
-      return <LeaderDashboard user={user} members={members} cells={cells} />;
+      return <LeaderDashboard user={user} members={members} cells={cells} events={events} />;
     case UserRole.MEMBER_VISITOR:
-      return <MemberDashboard user={user} prayers={prayers.filter(p => p.email === user.email)} activeTab={activeTab} />;
+      return <MemberDashboard user={user} prayers={prayers.filter(p => p.email === user.email)} events={events} activeTab={activeTab} />;
     default:
       return <div className="p-20 text-center text-zinc-500 font-black uppercase tracking-[0.5em] animate-pulse">Acesso Restrito</div>;
   }

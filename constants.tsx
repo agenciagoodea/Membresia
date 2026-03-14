@@ -19,7 +19,8 @@ import {
   Heart,
   Plus,
   Tv,
-  Users2
+  Users2,
+  Calendar
 } from 'lucide-react';
 import { Member, Cell, LadderStage, ChurchTenant, FinancialRecord, UserRole, ChurchStatus, PlanType, MeetingReport, PrayerRequest, PrayerStatus, PlanLimits } from './types';
 
@@ -54,6 +55,7 @@ export const MASTER_NAV_ITEMS = [
   { id: 'churches', label: 'Igrejas / Clientes', icon: <Globe size={20} /> },
   { id: 'admins', label: 'Administradores', icon: <Users2 size={20} /> },
   { id: 'plans', label: 'Planos & Assinaturas', icon: <CreditCard size={20} /> },
+  { id: 'events', label: 'Agenda Global', icon: <Calendar size={20} /> },
   { id: 'security', label: 'Segurança & Auditoria', icon: <ShieldAlert size={20} /> },
   { id: 'master-settings', label: 'Configurações SaaS', icon: <Settings size={20} /> },
 ];
@@ -64,6 +66,7 @@ export const PASTOR_NAV_ITEMS = [
   { id: 'members', label: 'Membros & Líderes', icon: <Users size={20} /> },
   { id: 'cells', label: 'Gestão de Células', icon: <Layers size={20} /> },
   { id: 'ladder', label: 'Escada do Sucesso', icon: <TrendingUp size={20} /> },
+  { id: 'events', label: 'Agenda & Eventos', icon: <Calendar size={20} /> },
   { id: 'prayer-moderation', label: 'Moderação de Orações', icon: <HeartHandshake size={20} /> },
   { id: 'prayer-screen-link', label: 'Abrir Telão (Demo)', icon: <Tv size={20} /> },
   { id: 'finance', label: 'Financeiro', icon: <DollarSign size={20} /> },
@@ -76,6 +79,7 @@ export const LEADER_NAV_ITEMS = [
   { id: 'dashboard', label: 'Meu Painel', icon: <LayoutDashboard size={20} /> },
   { id: 'cells', label: 'Minhas Células', icon: <Layers size={20} /> },
   { id: 'ladder', label: 'Meus Discípulos', icon: <TrendingUp size={20} /> },
+  { id: 'events', label: 'Agenda da Igreja', icon: <Calendar size={20} /> },
   { id: 'prayer-moderation', label: 'Pedidos de Oração', icon: <Heart size={20} /> },
   { id: 'ia-insights', label: 'Estudo de Célula (IA)', icon: <BookOpen size={20} /> },
   { id: 'profile', label: 'Meu Perfil', icon: <UserCircle size={20} /> },

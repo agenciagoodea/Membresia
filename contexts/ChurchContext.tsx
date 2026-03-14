@@ -3,11 +3,13 @@ import { Member, Cell, PrayerRequest, UserRole } from '../types';
 import { memberService } from '../services/memberService';
 import { cellService } from '../services/cellService';
 import { prayerService } from '../services/prayerService';
+import { eventService } from '../services/eventService';
 
 interface ChurchContextType {
   members: Member[];
   cells: Cell[];
   prayers: PrayerRequest[];
+  events: any[];
   loading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -18,6 +20,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
   const [members, setMembers] = useState<Member[]>([]);
   const [cells, setCells] = useState<Cell[]>([]);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refreshData = useCallback(async () => {
@@ -29,6 +32,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
       setMembers([]);
       setCells([]);
       setPrayers([]);
+      setEvents([]);
       setLoading(false);
       return;
     }
@@ -42,15 +46,17 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
 
     try {
       setLoading(true);
-      const [membersData, cellsData, prayersData] = await Promise.all([
+      const [membersData, cellsData, prayersData, eventsData] = await Promise.all([
         memberService.getAll(churchId).catch(() => []),
         cellService.getAll(churchId).catch(() => []),
-        prayerService.getAll(churchId).catch(() => [])
+        prayerService.getAll(churchId).catch(() => []),
+        eventService.getAll(churchId).catch(() => [])
       ]);
 
       setMembers(membersData);
       setCells(cellsData);
       setPrayers(prayersData);
+      setEvents(eventsData);
     } catch (error) {
       console.error('Erro ao sincronizar dados da igreja:', error);
     } finally {
@@ -63,7 +69,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
   }, [refreshData]);
 
   return (
-    <ChurchContext.Provider value={{ members, cells, prayers, loading, refreshData }}>
+    <ChurchContext.Provider value={{ members, cells, prayers, events, loading, refreshData }}>
       {children}
     </ChurchContext.Provider>
   );

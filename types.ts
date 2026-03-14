@@ -188,3 +188,15 @@ export interface FinancialRecord {
   date: string;
   category: string;
 }
+
+export interface ChurchEvent {
+  id: string;
+  church_id: string;
+  title: string;
+  description?: string;
+  date: string;
+  time?: string;
+  location?: string;
+  created_by: string;
+  created_at: string;
+}

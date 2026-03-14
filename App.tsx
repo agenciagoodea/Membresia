@@ -56,6 +56,7 @@ const LandingPage = lazy(() => import('./components/Marketing/LandingPage'));
 const PublicRegistration = lazy(() => import('./components/Marketing/PublicRegistration'));
 const Settings = lazy(() => import('./components/Settings'));
 const AdminsManager = lazy(() => import('./components/MasterAdmin/AdminsManager'));
+const Events = lazy(() => import('./components/Events/Events'));
 
 import { ChurchProvider } from './contexts/ChurchContext';
 
@@ -505,6 +506,7 @@ const App: React.FC = () => {
                         )}
 
                       <Route path="/settings" element={<Settings user={currentUser} />} />
+                      <Route path="/events" element={<Events user={currentUser} />} />
 
                       {/* Rotas de Membro */}
                       {currentUser?.role === UserRole.MEMBER_VISITOR && (
