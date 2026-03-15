@@ -275,6 +275,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
                       </span>
                     </div>
                   </td>
+                  <td className="px-6 py-8 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border ${member.stage === LadderStage.SEND ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                         member.stage === LadderStage.DISCIPLE ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
@@ -289,6 +290,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
                         </span>
                       )}
                     </div>
+                  </td>
                   <td className="px-6 py-8 text-center text-[10px] font-black text-zinc-300 uppercase tracking-widest italic">
                     {cells.find(c => c.id === member.cellId)?.name || 'Sem Célula'}
                   </td>
@@ -392,6 +394,7 @@ const Members: React.FC<{ user: any }> = ({ user }) => {
         onClose={() => setIsMemberModalOpen(false)}
         onSave={handleSaveMember}
         member={editingMember}
+        user={user}
       />
 
       <UpgradeModal

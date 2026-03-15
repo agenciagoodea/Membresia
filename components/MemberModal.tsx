@@ -12,9 +12,10 @@ interface MemberModalProps {
 	onClose: () => void;
 	onSave: (member: Partial<Member>) => Promise<void>;
 	member?: Member | null;
+	user: any;
 }
 
-const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, member }) => {
+const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, member, user }) => {
 	const [formData, setFormData] = useState<Partial<Member>>({
 		name: '',
 		email: '',
@@ -40,6 +41,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		password: '',
 		status: MemberStatus.ACTIVE
 	});
+	const [originalPassword, setOriginalPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [photoPreview, setPhotoPreview] = useState<string>('');
@@ -62,12 +64,13 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		const loadData = async () => {
 			try {
 				setLoadingData(true);
+				const churchId = user?.churchId || user?.church_id;
 				const [cellsData, membersData] = await Promise.all([
-					cellService.getAll(MOCK_TENANT.id),
-					memberService.getAll(MOCK_TENANT.id)
+					cellService.getAll(churchId),
+					memberService.getAll(churchId)
 				]);
 				setCells(cellsData);
-				setAllMembers(membersData);
+				setAllMembers(membersData || []);
 			} catch (error) {
 				console.error('Erro ao carregar dados:', error);
 			} finally {
@@ -78,11 +81,12 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		if (isOpen) {
 			loadData();
 		}
-	}, [isOpen]);
+	}, [isOpen, user?.churchId, user?.church_id]);
 
 	useEffect(() => {
 		if (member) {
 			setFormData(member);
+			setOriginalPassword(member.password || '');
 			setConfirmPassword(member.password || '');
 			setPhotoPreview('');
 			setSelectedFile(null);
@@ -112,6 +116,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 				password: '',
 				status: MemberStatus.ACTIVE
 			});
+			setOriginalPassword('');
 			setConfirmPassword('');
 			setPhotoPreview('');
 			setSelectedFile(null);
@@ -203,6 +208,11 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 		try {
 			setSaving(true);
 			let finalFormData = { ...formData };
+
+			// Se a senha não mudou, remover do payload para evitar erros de RPC no Supabase
+			if (finalFormData.password === originalPassword) {
+				delete finalFormData.password;
+			}
 
 			if (selectedFile) {
 				const photoUrl = await memberService.uploadAvatar(selectedFile);
@@ -726,7 +736,12 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 									onClick={async () => {
 										try {
 											setSaving(true);
-											let finalFormData = { ...formData, status: MemberStatus.ACTIVE };
+											let finalFormData: any = { status: MemberStatus.ACTIVE };
+											
+											// Incluir outros campos que podem ter sido editados mas sem mexer na senha
+											const { password, ...otherData } = formData;
+											finalFormData = { ...otherData, ...finalFormData };
+											
 											if (selectedFile) {
 												const photoUrl = await memberService.uploadAvatar(selectedFile);
 												finalFormData.avatar = photoUrl;

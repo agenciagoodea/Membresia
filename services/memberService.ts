@@ -8,7 +8,9 @@ const mapToFrontend = (m: any): Member => ({
 	phone: m.phone,
 	churchId: m.church_id,
 	role: m.role,
-	status: (m.status === 'PENDING' || !m.status) ? MemberStatus.PENDING : m.status,
+	status: (m.status === 'PENDING' || !m.status) ? MemberStatus.PENDING : 
+	        (m.status === 'ACTIVE') ? MemberStatus.ACTIVE :
+	        (m.status === 'REJECTED') ? MemberStatus.REJECTED : m.status,
 	stage: m.stage,
 	cellId: m.cell_id,
 	disciplerId: m.discipler_id,
@@ -42,7 +44,11 @@ const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
 	if (m.email !== undefined) db.email = m.email;
 	if (m.phone !== undefined) db.phone = m.phone;
 	if (m.role !== undefined) db.role = m.role;
-	if (m.status !== undefined) db.status = m.status;
+	if (m.status !== undefined) {
+		db.status = m.status === MemberStatus.ACTIVE ? 'ACTIVE' : 
+		            m.status === MemberStatus.PENDING ? 'PENDING' :
+		            m.status === MemberStatus.REJECTED ? 'REJECTED' : m.status;
+	}
 	if (m.stage !== undefined) db.stage = m.stage;
 	if (m.cellId !== undefined) db.cell_id = m.cellId || null;
 	if (m.disciplerId !== undefined) db.discipler_id = m.disciplerId || null;
@@ -145,8 +151,8 @@ export const memberService = {
 	async update(id: string, updates: Partial<Member>) {
 		const dbData = mapToDb(updates);
 
-		// 1. Verificar se houve mudança de senha ou email
-		if (updates.password || updates.email) {
+		// 1. Verificar se houve mudança de senha ou email (e se não são vazios)
+		if ((updates.password && updates.password.length > 0) || (updates.email && updates.email.length > 0)) {
 			const { data: { user: currentUser } } = await supabase.auth.getUser();
 			const targetMember = await this.getById(id);
 			
