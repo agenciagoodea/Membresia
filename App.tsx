@@ -493,8 +493,8 @@ const App: React.FC = () => {
                         </>
                       )}
 
-                      {/* Rotas Financeiras e Configurações (Apenas Admins e Master) */}
-                      {(currentUser?.role === UserRole.MASTER_ADMIN || currentUser?.role === UserRole.CHURCH_ADMIN) && (
+                      {/* Rotas Financeiras e Configurações (Apenas Admins, Pastores e Master) */}
+                      {(currentUser?.role === UserRole.MASTER_ADMIN || currentUser?.role === UserRole.CHURCH_ADMIN || currentUser?.role === UserRole.PASTOR) && (
                         <Route path="/finance" element={<Finance user={currentUser} />} />
                       )}
 

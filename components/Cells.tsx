@@ -81,7 +81,11 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
 
   disciplesList = cellMembers.filter(m => !leadersList.find(l => l.id === m.id));
 
-  const isLeader = currentUser.role === UserRole.CELL_LEADER_DISCIPLE || currentUser.role === UserRole.PASTOR || currentUser.role === UserRole.CHURCH_ADMIN || currentUser.role === UserRole.MASTER_ADMIN;
+  const isLeader = 
+    currentUser.role === UserRole.MASTER_ADMIN || 
+    currentUser.role === UserRole.CHURCH_ADMIN || 
+    currentUser.role === UserRole.PASTOR || 
+    (currentUser.role === UserRole.CELL_LEADER_DISCIPLE && (cell.leaderId === currentUser.id || cell.leaderId === currentUser.profile?.id));
 
   useEffect(() => {
     const loadReports = async () => {
@@ -798,18 +802,22 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsEditingReport(true)}
-                  className="p-3 bg-zinc-800 text-zinc-400 hover:text-amber-400 rounded-2xl transition-all"
-                >
-                  <Edit2 size={20} />
-                </button>
-                <button
-                  onClick={() => handleDeleteReport(selectedReport.id)}
-                  className="p-3 bg-zinc-800 text-zinc-400 hover:text-rose-500 rounded-2xl transition-all"
-                >
-                  <Trash2 size={20} />
-                </button>
+                {isLeader && (
+                  <>
+                    <button
+                      onClick={() => setIsEditingReport(true)}
+                      className="p-3 bg-zinc-800 text-zinc-400 hover:text-amber-400 rounded-2xl transition-all"
+                    >
+                      <Edit2 size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReport(selectedReport.id)}
+                      className="p-3 bg-zinc-800 text-zinc-400 hover:text-rose-500 rounded-2xl transition-all"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </>
+                )}
                 <button onClick={() => setSelectedReport(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all text-zinc-500 hover:text-white">
                   <X size={24} />
                 </button>

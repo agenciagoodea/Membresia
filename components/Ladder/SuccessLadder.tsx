@@ -272,28 +272,36 @@ const SuccessLadder: React.FC<{ user: any }> = ({ user }) => {
     loadData();
   }, []);
 
-  const getStageMembers = (stage: LadderStage) => {
+  const getFilteredMembers = () => {
     const isAdmin = user.role === UserRole.MASTER_ADMIN || user.role === UserRole.CHURCH_ADMIN;
     
     return members.filter(m => {
-      // 1. Basic Filters (Stage & Search)
-      const matchesStage = m.stage === stage;
+      // 1. Search Filter
       const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
-      if (!matchesStage || !matchesSearch) return false;
+      if (!matchesSearch) return false;
 
       // 2. Visibility Bypass for Admins
       if (isAdmin) return true;
 
-      // 3. Visibility for Regular Users/Leaders
+      // 3. Visibility for Regular Users/Leaders/Pastors (Eco-system)
       const isSelf = m.id === user.id;
       const isSpouse = m.id === user.spouseId || user.id === m.spouseId;
       
+      // Check if user is the pastor or discipler
+      const isMyDisciple = m.pastorId === user.id || m.disciplerId === user.id;
+
       // Check if user is leader or host of the member's cell
       const memberCell = cells.find(c => c.id === m.cellId);
       const isCellLeaderOrHost = memberCell && (memberCell.leaderId === user.id || memberCell.hostId === user.id);
 
-      return isSelf || isSpouse || isCellLeaderOrHost;
+      return isSelf || isSpouse || isMyDisciple || isCellLeaderOrHost;
     });
+  };
+
+  const filteredMembers = getFilteredMembers();
+
+  const getStageMembers = (stage: LadderStage) => {
+    return filteredMembers.filter(m => m.stage === stage);
   };
 
   const planLimit = PLAN_CONFIGS[user.plan || PlanType.BASIC]?.maxMembers || 50;
@@ -456,7 +464,7 @@ const SuccessLadder: React.FC<{ user: any }> = ({ user }) => {
 
 
   const stats = [
-    { label: 'Discípulos Ativos', value: members.length.toString().padStart(2, '0'), trend: '+12%', icon: <Target className="text-blue-500" /> },
+    { label: 'Discípulos Ativos', value: filteredMembers.length.toString().padStart(2, '0'), trend: '+12%', icon: <Target className="text-blue-500" /> },
     { label: 'Em Consolidação', value: getStageMembers(LadderStage.CONSOLIDATE).length.toString().padStart(2, '0'), trend: '+5%', icon: <UserCheck className="text-emerald-500" /> },
     { label: 'Novos Líderes', value: getStageMembers(LadderStage.SEND).length.toString().padStart(2, '0'), trend: '+2%', icon: <Zap className="text-amber-500" /> },
     { label: 'Taxa Retenção', value: '92%', trend: '+8%', icon: <TrendingUp className="text-rose-500" /> },
