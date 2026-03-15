@@ -40,13 +40,22 @@ const mapToDb = (p: Partial<PrayerRequest> & { church_id?: string }) => {
 	return db;
 };
 
+// Colunas essenciais para listagem de orações
+const PRAYER_LIST_COLUMNS = 'id, name, status, created_at, request, target_name, show_on_screen';
+
 export const prayerService = {
-	async getAll(churchId: string) {
-		const { data, error } = await supabase
+	async getAll(churchId: string, range?: { from: number; to: number }) {
+		let query = supabase
 			.from('prayers')
-			.select('*')
+			.select(PRAYER_LIST_COLUMNS)
 			.eq('church_id', churchId)
 			.order('created_at', { ascending: false });
+
+		if (range) {
+			query = query.range(range.from, range.to);
+		}
+
+		const { data, error } = await query;
 
 		if (error) throw error;
 		return (data || []).map(mapToFrontend);

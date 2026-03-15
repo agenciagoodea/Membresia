@@ -49,12 +49,16 @@ const mapToDb = (c: Partial<Cell> & { church_id?: string }) => {
 	return db;
 };
 
+// Colunas para listagem (remove dados pesados se houver)
+const CELL_LIST_COLUMNS = 'id, name, leader_id, host_name, address, meeting_day, meeting_time, members_count, status, logo, church_id';
+
 export const cellService = {
 	async getAll(churchId: string) {
 		const { data, error } = await supabase
 			.from('cells')
-			.select('*')
-			.eq('church_id', churchId);
+			.select(CELL_LIST_COLUMNS)
+			.eq('church_id', churchId)
+			.order('name');
 
 		if (error) throw error;
 		return (data || []).map(mapToFrontend);

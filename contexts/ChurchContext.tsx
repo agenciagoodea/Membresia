@@ -26,11 +26,10 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
   const [meetingExceptions, setMeetingExceptions] = useState<CellMeetingException[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (options?: { force?: boolean; partial?: 'members' | 'cells' | 'prayers' | 'events' | 'exceptions' }) => {
     const churchId = user?.churchId || user?.church_id;
     const isMaster = user?.role === UserRole.MASTER_ADMIN;
 
-    // Se não houver churchId e não for master, não há dados para carregar (ex: visitante sem vínculo)
     if (!churchId && !isMaster) {
       setMembers([]);
       setCells([]);
@@ -41,28 +40,50 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode; user: any }> 
       return;
     }
 
-    // Se for master, talvez queira carregar tudo, mas por enquanto o Dashboard Master é estático
-    // ou carrega do churchService. Criado para centralizar o que hoje é espalhado.
     if (isMaster) {
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
-      const [membersData, cellsData, prayersData, eventsData, exceptionsData] = await Promise.all([
-        memberService.getAll(churchId).catch(() => []),
-        cellService.getAll(churchId).catch(() => []),
-        prayerService.getAll(churchId).catch(() => []),
-        eventService.getAll(churchId).catch(() => []),
-        cellMeetingService.getExceptions(churchId).catch(() => [])
-      ]);
+      if (!options?.partial) setLoading(true);
+      
+      const promises: Promise<any>[] = [];
+      const keys: string[] = [];
 
-      setMembers(membersData);
-      setCells(cellsData);
-      setPrayers(prayersData);
-      setEvents(eventsData);
-      setMeetingExceptions(exceptionsData);
+      if (!options?.partial || options.partial === 'members') {
+        promises.push(memberService.getAll(churchId).catch(() => []));
+        keys.push('members');
+      }
+      if (!options?.partial || options.partial === 'cells') {
+        promises.push(cellService.getAll(churchId).catch(() => []));
+        keys.push('cells');
+      }
+      if (!options?.partial || options.partial === 'prayers') {
+        // Busca as últimas 50 orações para performance inicial
+        promises.push(prayerService.getAll(churchId, { from: 0, to: 49 }).catch(() => []));
+        keys.push('prayers');
+      }
+      if (!options?.partial || options.partial === 'events') {
+        promises.push(eventService.getAll(churchId).catch(() => []));
+        keys.push('events');
+      }
+      if (!options?.partial || options.partial === 'exceptions') {
+        promises.push(cellMeetingService.getExceptions(churchId).catch(() => []));
+        keys.push('exceptions');
+      }
+
+      const results = await Promise.all(promises);
+      
+      results.forEach((data, i) => {
+        const key = keys[i];
+        if (key === 'members') setMembers(data);
+        if (key === 'cells') setCells(data);
+        if (key === 'prayers') setPrayers(data);
+        if (key === 'events') setEvents(data);
+        if (key === 'exceptions') setMeetingExceptions(data);
+      });
+
     } catch (error) {
       console.error('Erro ao sincronizar dados da igreja:', error);
     } finally {

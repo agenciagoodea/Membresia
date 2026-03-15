@@ -41,7 +41,7 @@ import CheckpointManager from './Ladder/CheckpointManager';
 import { mergeAgendaItems } from '../utils/agendaUtils';
 
 // Componentes Auxiliares
-const PageHeader = ({ title, subtitle, actions }: { title: string, subtitle: string, actions?: React.ReactNode }) => (
+const PageHeader = React.memo(({ title, subtitle, actions }: { title: string, subtitle: string, actions?: React.ReactNode }) => (
   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
     <div>
       <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none mb-3">
@@ -53,9 +53,9 @@ const PageHeader = ({ title, subtitle, actions }: { title: string, subtitle: str
     </div>
     {actions}
   </div>
-);
+));
 
-const StatCard = ({ title, value, trend, subValue, icon, color }: { title: string, value: string | number, trend?: number, subValue?: string, icon: React.ReactNode, color: string }) => (
+const StatCard = React.memo(({ title, value, trend, subValue, icon, color }: { title: string, value: string | number, trend?: number, subValue?: string, icon: React.ReactNode, color: string }) => (
   <div className="bg-zinc-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
     <div className={`absolute -right-4 -top-4 w-24 h-24 ${color} rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity`} />
     <div className="flex justify-between items-start mb-6 relative">
@@ -76,7 +76,7 @@ const StatCard = ({ title, value, trend, subValue, icon, color }: { title: strin
       </div>
     </div>
   </div>
-);
+));
 
 const MasterDashboard = () => (
   <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">

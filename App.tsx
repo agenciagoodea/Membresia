@@ -340,11 +340,10 @@ const App: React.FC = () => {
 
     // Função para buscar dados frescos em background (avatar etc)
     const syncFreshProfile = async (email: string) => {
-      if (!email) return;
+      if (!email || profileResolvedRef.current) return;
       try {
         const fresh = await memberService.getByEmail(email);
         if (fresh) {
-          // Se tiver diferença (ex: foto nova), atualiza
           setCurrentUser((prev: any) => {
             if (prev?.avatar !== fresh.avatar || prev?.name !== fresh.name || prev?.role !== fresh.role) {
               supabase.auth.updateUser({ data: { profile: fresh } }).catch(() => {});
@@ -355,6 +354,8 @@ const App: React.FC = () => {
         }
       } catch (e) {
         console.warn('Silent sync failed', e);
+      } finally {
+        profileResolvedRef.current = true;
       }
     };
 

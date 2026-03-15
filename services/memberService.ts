@@ -75,12 +75,22 @@ const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
 	return db;
 };
 
+// Colunas essenciais para listagem (evita payload pesado de endereços e histórico)
+const ESSENTIAL_COLUMNS = 'id, name, email, phone, role, status, stage, cell_id, avatar, church_id';
+
 export const memberService = {
-	async getAll(churchId: string) {
-		const { data, error } = await supabase
+	async getAll(churchId: string, range?: { from: number; to: number }) {
+		let query = supabase
 			.from('members')
-			.select('*')
-			.eq('church_id', churchId);
+			.select(ESSENTIAL_COLUMNS)
+			.eq('church_id', churchId)
+			.order('name');
+
+		if (range) {
+			query = query.range(range.from, range.to);
+		}
+
+		const { data, error } = await query;
 
 		if (error) throw error;
 		return (data || []).map(mapToFrontend);
