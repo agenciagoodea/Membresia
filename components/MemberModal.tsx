@@ -6,7 +6,6 @@ import { Member, UserRole, LadderStage, Cell, MemberOrigin, MemberStatus, M12Che
 import { cellService } from '../services/cellService';
 import { memberService } from '../services/memberService';
 import { m12Service } from '../services/m12Service';
-import { MOCK_TENANT } from '../constants';
 
 interface MemberModalProps {
 	isOpen: boolean;

@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_TENANT, PLAN_CONFIGS } from '../../constants';
-import { Member, Cell, LadderStage, M12Checkpoint, MemberOrigin, UserRole } from '../../types';
+import { Member, Cell, LadderStage, M12Checkpoint, MemberOrigin, UserRole, PlanType } from '../../types';
 import { memberService } from '../../services/memberService';
 import { cellService } from '../../services/cellService';
 import { m12Service } from '../../services/m12Service';
@@ -247,10 +247,16 @@ const SuccessLadder: React.FC<{ user: any }> = ({ user }) => {
   const loadData = async () => {
     try {
       setLoading(true);
+      const churchId = user.churchId || user.church_id;
+      if (!churchId) {
+        setLoading(false);
+        return;
+      }
+
       const [membersData, cellsData, checkpointsData] = await Promise.all([
-        memberService.getAll(MOCK_TENANT.id).catch(() => []),
-        cellService.getAll(MOCK_TENANT.id).catch(() => []),
-        m12Service.getCheckpoints(MOCK_TENANT.id).catch(() => [])
+        memberService.getAll(churchId).catch(() => []),
+        cellService.getAll(churchId).catch(() => []),
+        m12Service.getCheckpoints(churchId).catch(() => [])
       ]);
       setMembers(membersData);
       setCells(cellsData);
@@ -290,7 +296,7 @@ const SuccessLadder: React.FC<{ user: any }> = ({ user }) => {
     });
   };
 
-  const planLimit = PLAN_CONFIGS[MOCK_TENANT.plan].maxMembers;
+  const planLimit = PLAN_CONFIGS[user.plan || PlanType.BASIC]?.maxMembers || 50;
   const isLimitReached = members.length >= planLimit;
 
   const handleAddVisitor = () => {
@@ -303,9 +309,10 @@ const SuccessLadder: React.FC<{ user: any }> = ({ user }) => {
 
   const handleSaveMember = async (formData: Partial<Member>) => {
     try {
+      const churchId = user.churchId || user.church_id;
       const created = await memberService.create({
         ...formData,
-        church_id: MOCK_TENANT.id,
+        church_id: churchId,
         joinedDate: new Date().toISOString(),
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || '')}&background=random`,
         origin: formData.origin || '',

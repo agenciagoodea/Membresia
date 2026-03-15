@@ -45,7 +45,7 @@ const Cells = lazy(() => import('./components/Cells'));
 const Finance = lazy(() => import('./components/Finance'));
 const IAInsights = lazy(() => import('./components/IAInsights'));
 const SuccessLadder = lazy(() => import('./components/Ladder/SuccessLadder'));
-const MyM12Activities = lazy(() => import('./components/Member/MyM12Activities'));
+const MyM12Activities = lazy(() => import('./components/Member/MyM12Activities.tsx'));
 const ChurchesManager = lazy(() => import('./components/MasterAdmin/ChurchesManager'));
 const PlansManager = lazy(() => import('./components/MasterAdmin/PlansManager'));
 const SecurityAudit = lazy(() => import('./components/MasterAdmin/SecurityAudit'));
@@ -495,7 +495,7 @@ const App: React.FC = () => {
 
                       {/* Rotas Financeiras e Configurações (Apenas Admins e Master) */}
                       {(currentUser?.role === UserRole.MASTER_ADMIN || currentUser?.role === UserRole.CHURCH_ADMIN) && (
-                        <Route path="/finance" element={<Finance />} />
+                        <Route path="/finance" element={<Finance user={currentUser} />} />
                       )}
 
                       {/* Rotas de Master Admin (SaaS Global) */}

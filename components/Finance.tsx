@@ -53,7 +53,7 @@ const FinanceStatCard = ({ title, amount, trend, icon, color, isNegative }: any)
   </div>
 );
 
-const Finance: React.FC = () => {
+const Finance: React.FC<{ user: any }> = ({ user }) => {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,7 +61,12 @@ const Finance: React.FC = () => {
   const loadRecords = async () => {
     try {
       setLoading(true);
-      const data = await financeService.getAll(MOCK_TENANT.id);
+      const churchId = user.churchId || user.church_id;
+      if (!churchId) {
+        setLoading(false);
+        return;
+      }
+      const data = await financeService.getAll(churchId);
       setRecords(data);
     } catch (error) {
       console.error('Erro ao carregar registros financeiros:', error);

@@ -32,14 +32,16 @@ const MyProgress: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     const fetchCheckpoints = async () => {
       try {
-        const data = await m12Service.getCheckpoints(MOCK_TENANT.id);
+        const churchId = user.churchId || user.church_id;
+        if (!churchId) return;
+        const data = await m12Service.getCheckpoints(churchId);
         setCheckpoints(data);
       } catch (error) {
         console.error('Erro ao buscar checkpoints:', error);
       }
     };
     fetchCheckpoints();
-  }, []);
+  }, [user.churchId, user.church_id]);
 
   const getActivitiesForStage = (stage: LadderStage) => {
     const stageCheckpoints = checkpoints.filter(c => c.stage === stage);

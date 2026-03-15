@@ -270,9 +270,9 @@ const DashboardEventsWidget = ({ events }: { events: any[] }) => {
   );
 };
 
-const ChurchAdminDashboard = ({ members, cells, prayers, events, activeTab }: { members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
+const ChurchAdminDashboard = ({ user, members, cells, prayers, events, activeTab }: { user: any, members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
   if (activeTab === 'm12-config') {
-    return <CheckpointManager />;
+    return <CheckpointManager user={user} />;
   }
   const planLimits = PLAN_CONFIGS[PlanType.PRO];
   const totalMembers = members.length;
@@ -358,9 +358,9 @@ const ChurchAdminDashboard = ({ members, cells, prayers, events, activeTab }: { 
   );
 };
 
-const PastorDashboard = ({ members, cells, prayers, events, activeTab }: { members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
+const PastorDashboard = ({ user, members, cells, prayers, events, activeTab }: { user: any, members: Member[], cells: Cell[], prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
   if (activeTab === 'm12-config') {
-    return <CheckpointManager />;
+    return <CheckpointManager user={user} />;
   }
   const ladderDist = [
     { stage: 'Ganhar', count: members.filter(m => m.stage === LadderStage.WIN).length, color: '#3b82f6' },
@@ -776,9 +776,9 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
     case UserRole.MASTER_ADMIN:
       return <MasterDashboard />;
     case UserRole.CHURCH_ADMIN:
-      return <ChurchAdminDashboard members={members} cells={cells} prayers={prayers} events={mergedEvents} activeTab={activeTab} />;
+      return <ChurchAdminDashboard user={user} members={members} cells={cells} prayers={prayers} events={mergedEvents} activeTab={activeTab} />;
     case UserRole.PASTOR:
-      return <PastorDashboard members={members} cells={cells} prayers={prayers} events={mergedEvents} activeTab={activeTab} />;
+      return <PastorDashboard user={user} members={members} cells={cells} prayers={prayers} events={mergedEvents} activeTab={activeTab} />;
     case UserRole.CELL_LEADER_DISCIPLE:
       return <LeaderDashboard user={user} members={members} cells={cells} events={mergedEvents} />;
     case UserRole.MEMBER_VISITOR:

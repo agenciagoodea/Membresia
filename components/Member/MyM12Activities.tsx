@@ -35,13 +35,18 @@ const MyM12Activities: React.FC<{ user: any }> = ({ user }) => {
   const loadData = async () => {
     try {
       setLoading(true);
+      const churchId = user.churchId || user.church_id;
+      if (!churchId) {
+        setLoading(false);
+        return;
+      }
+
       const [membersData, checkpointsData] = await Promise.all([
-        memberService.getAll(MOCK_TENANT.id),
-        m12Service.getCheckpoints(MOCK_TENANT.id)
+        memberService.getAll(churchId),
+        m12Service.getCheckpoints(churchId)
       ]);
 
-      // Filter members: self, spouse, and disciples of led/hosted cells
-      const cells = await cellService.getAll(MOCK_TENANT.id);
+      const cells = await cellService.getAll(churchId);
       
       const filtered = membersData.filter(m => {
         const isSelf = m.id === user.id;

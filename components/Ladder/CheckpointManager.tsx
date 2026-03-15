@@ -19,7 +19,7 @@ import { LadderStage, M12Checkpoint } from '../../types';
 import { m12Service } from '../../services/m12Service';
 import { MOCK_TENANT } from '../../constants';
 
-const CheckpointManager: React.FC = () => {
+const CheckpointManager: React.FC<{ user: any }> = ({ user }) => {
   const [activeStage, setActiveStage] = useState<LadderStage>(LadderStage.WIN);
   const [checkpoints, setCheckpoints] = useState<M12Checkpoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,12 @@ const CheckpointManager: React.FC = () => {
   const loadCheckpoints = async () => {
     try {
       setLoading(true);
-      const data = await m12Service.getAllCheckpoints(MOCK_TENANT.id);
+      const churchId = user.churchId || user.church_id;
+      if (!churchId) {
+        setLoading(false);
+        return;
+      }
+      const data = await m12Service.getAllCheckpoints(churchId);
       setCheckpoints(data.sort((a, b) => a.order - b.order));
     } catch (error) {
       console.error('Error loading checkpoints:', error);
@@ -51,9 +56,10 @@ const CheckpointManager: React.FC = () => {
 
   const handleSave = async (checkpoint: Partial<M12Checkpoint>) => {
     try {
+      const churchId = user.churchId || user.church_id;
       const dataToSave = {
         ...checkpoint,
-        churchId: MOCK_TENANT.id,
+        churchId: churchId,
         stage: activeStage
       };
       

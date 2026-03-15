@@ -27,7 +27,8 @@ const IAInsights: React.FC<{ user: any }> = ({ user }) => {
 
   const handleGenerateInsight = async () => {
     setLoadingInsight(true);
-    const context = `Igreja: ${MOCK_TENANT.name}, Membros: ${MOCK_TENANT.stats.totalMembers}, Células: ${MOCK_TENANT.stats.activeCells}.`;
+    const churchName = user.church_name || user.churchName || 'Sua Igreja';
+    const context = `Igreja: ${churchName}. O pastor deseja 3 estratégias de expansão baseadas no crescimento do Reino.`;
     const result = await generatePastoralInsight(context);
     setInsight(result || 'Erro ao gerar insight');
     setLoadingInsight(false);

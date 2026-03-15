@@ -30,14 +30,16 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ isOpen, onClose
   React.useEffect(() => {
     const fetchCheckpoints = async () => {
       try {
-        const data = await m12Service.getCheckpoints(MOCK_TENANT.id);
+        const churchId = member.churchId || member.church_id;
+        if (!churchId) return;
+        const data = await m12Service.getCheckpoints(churchId);
         setCheckpoints(data);
       } catch (error) {
         console.error('Error fetching checkpoints:', error);
       }
     };
     if (isOpen) fetchCheckpoints();
-  }, [isOpen]);
+  }, [isOpen, member.churchId, member.church_id]);
 
   const getPerformanceData = () => {
     const stageCheckpoints = checkpoints.filter(c => c.stage === member.stage);
