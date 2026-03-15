@@ -21,7 +21,7 @@ import {
   Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_TENANT, PLAN_CONFIGS } from '../../constants';
+import { PLAN_CONFIGS } from '../../constants';
 import { Member, Cell, LadderStage, M12Checkpoint, MemberOrigin, UserRole, PlanType } from '../../types';
 import { memberService } from '../../services/memberService';
 import { cellService } from '../../services/cellService';

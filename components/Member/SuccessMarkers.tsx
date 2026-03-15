@@ -3,7 +3,6 @@ import { CheckCircle2, Circle, Trophy, Sparkles, Lock } from 'lucide-react';
 import { memberService } from '../../services/memberService';
 import { m12Service } from '../../services/m12Service';
 import { LadderStage, M12Checkpoint } from '../../types';
-import { MOCK_TENANT } from '../../constants';
 
 const DEFAULT_STAGE_ACTIVITIES: Record<LadderStage, string[]> = {
   [LadderStage.WIN]: ['Sistema de Oração', 'Consolidação Inicial', 'Visita à Célula', 'Pré-Encontro'],

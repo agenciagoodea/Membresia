@@ -41,7 +41,7 @@ const mapToDb = (p: Partial<PrayerRequest> & { church_id?: string }) => {
 };
 
 // Colunas essenciais para listagem de orações
-const PRAYER_LIST_COLUMNS = 'id, name, status, created_at, request, target_name, show_on_screen';
+const PRAYER_LIST_COLUMNS = 'id, name, phone, email, photo, status, created_at, request, target_name, show_on_screen, is_anonymous, target_person, request_pastoral_call, address_details';
 
 export const prayerService = {
 	async getAll(churchId: string, range?: { from: number; to: number }) {

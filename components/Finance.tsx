@@ -16,7 +16,6 @@ import {
   Search,
   Wallet
 } from 'lucide-react';
-import { MOCK_TENANT } from '../constants';
 import { FinancialRecord } from '../types';
 import { financeService } from '../services/financeService';
 import PageHeader from './Shared/PageHeader';

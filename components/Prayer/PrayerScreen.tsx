@@ -6,13 +6,12 @@ import { useParams } from 'react-router-dom';
 import { ChurchStatus, PrayerStatus, PrayerRequest, ChurchTenant } from '../../types';
 import { prayerService } from '../../services/prayerService';
 import { churchService } from '../../services/churchService';
-import { MOCK_TENANT } from '../../constants';
 import { supabase } from '../../services/supabaseClient';
 
 const PrayerScreen: React.FC = () => {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const effectiveSlug = slug || 'vida-nova'; // Fallback para o slug padrão do MOCK_TENANT
+  const effectiveSlug = slug || '';
   const [requests, setRequests] = useState<PrayerRequest[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tenant, setTenant] = useState<ChurchTenant | null>(null);
@@ -45,8 +44,8 @@ const PrayerScreen: React.FC = () => {
         if (!currentTenant) {
           console.log('Sem slug ou erro, buscando igreja padrão...');
           currentTenant = await churchService.getFirst().catch(err => {
-            console.warn('Nenhuma igreja no banco, usando MOCK:', err);
-            return MOCK_TENANT;
+            console.warn('Nenhuma igreja no banco:', err);
+            return null;
           });
         }
         setTenant(currentTenant);

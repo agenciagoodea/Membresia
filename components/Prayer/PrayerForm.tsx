@@ -2,7 +2,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Heart, Camera, ShieldCheck, CheckCircle2, User, UserPlus, Eye, EyeOff, Phone, Mail, MessageSquare, ChevronLeft, Monitor, X, Loader2 } from 'lucide-react';
-import { MOCK_TENANT } from '../../constants';
 import { PrayerStatus, ChurchTenant } from '../../types';
 import { prayerService } from '../../services/prayerService';
 import { churchService } from '../../services/churchService';
@@ -65,7 +64,7 @@ const PrayerForm: React.FC = () => {
 
         // Se sem slug ou falhar, busca a primeira do banco
         if (!tenant) {
-          const data = await churchService.getFirst().catch(() => MOCK_TENANT);
+          const data = await churchService.getFirst().catch(() => null);
           setTenant(data);
         }
       } catch (error) {
@@ -145,7 +144,7 @@ const PrayerForm: React.FC = () => {
       }
 
       await prayerService.create({
-        church_id: tenant?.id || MOCK_TENANT.id,
+        church_id: tenant?.id || '',
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
@@ -253,9 +252,15 @@ const PrayerForm: React.FC = () => {
 
       <div className="w-full max-w-2xl relative z-10">
         <div className="text-center mb-16">
-          <img src={tenant?.logo || MOCK_TENANT.logo} className="w-24 h-24 rounded-3xl mx-auto mb-8 shadow-2xl object-contain bg-zinc-900 p-3 border border-white/10" alt="" />
+          {tenant?.logo ? (
+            <img src={tenant.logo} className="w-24 h-24 rounded-3xl mx-auto mb-8 shadow-2xl object-contain bg-zinc-900 p-3 border border-white/10" alt="" />
+          ) : (
+            <div className="w-24 h-24 rounded-3xl mx-auto mb-8 bg-blue-600 flex items-center justify-center text-white font-black text-4xl shadow-2xl border border-white/10 italic">
+              {tenant?.name?.substring(0, 1) || '?'}
+            </div>
+          )}
           <h1 className="text-5xl font-black text-white mb-3 tracking-tighter uppercase leading-none text-center">Clamor Coletivo</h1>
-          <p className="text-zinc-500 font-bold italic text-lg text-center">Central de Pedidos de Clamor — {tenant?.name || MOCK_TENANT.name}</p>
+          <p className="text-zinc-500 font-bold italic text-lg text-center">Central de Pedidos de Clamor — {tenant?.name || 'Comunidade'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-zinc-900 p-10 md:p-16 rounded-[4rem] border border-white/5 shadow-[0_50px_100px_rgba(0,0,0,0.5)] space-y-12">
@@ -436,7 +441,7 @@ const PrayerForm: React.FC = () => {
                 <Switch active={formData.consent} onChange={() => setFormData({ ...formData, consent: !formData.consent })} />
               </div>
               <p className="text-[10px] text-zinc-500 leading-relaxed font-bold uppercase tracking-widest italic pt-1.5">
-                Autorizo o tratamento dos dados pela {MOCK_TENANT.name} conforme as leis de proteção de dados para fins exclusivos de cuidado espiritual e intercessão.
+                Autorizo o tratamento dos dados pela {tenant?.name || 'Igreja'} conforme as leis de proteção de dados para fins exclusivos de cuidado espiritual e intercessão.
               </p>
             </div>
 

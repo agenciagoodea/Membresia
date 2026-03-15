@@ -25,8 +25,7 @@ import {
   X,
   TrendingUp
 } from 'lucide-react';
-import { MOCK_PRAYER_REQUESTS, MOCK_TENANT } from '../../constants';
-import { LadderStage, PrayerStatus, PrayerRequest, UserRole, MemberOrigin } from '../../types';
+import { LadderStage, PrayerStatus, PrayerRequest, UserRole, MemberOrigin, MemberStatus } from '../../types';
 import { prayerService } from '../../services/prayerService';
 import { memberService } from '../../services/memberService';
 import PageHeader from '../Shared/PageHeader';
@@ -40,9 +39,12 @@ const PrayerModeration: React.FC<{ user: any }> = ({ user }) => {
 
   const loadRequests = async () => {
     try {
+      const churchId = user?.churchId || user?.church_id;
+      if (!churchId) return;
+
       const [requestsData, membersData] = await Promise.all([
-        prayerService.getAll(MOCK_TENANT.id),
-        memberService.getAll(MOCK_TENANT.id)
+        prayerService.getAll(churchId),
+        memberService.getAll(churchId)
       ]);
       setRequests(requestsData);
       setMemberEmails(new Set(membersData.map(m => m.email || '').map(e => e.toLowerCase()).filter(e => e)));
@@ -100,7 +102,7 @@ const PrayerModeration: React.FC<{ user: any }> = ({ user }) => {
       }
 
       await memberService.create({
-        church_id: MOCK_TENANT.id,
+        church_id: user?.churchId || user?.church_id,
         name: request.name,
         email: request.email,
         phone: request.phone,
@@ -110,6 +112,7 @@ const PrayerModeration: React.FC<{ user: any }> = ({ user }) => {
         joinedDate: new Date().toISOString(),
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(request.name)}&background=random`,
         origin: MemberOrigin.PRAYER_REQUEST,
+        status: MemberStatus.ACTIVE,
         stageHistory: [{
           stage: LadderStage.WIN,
           date: new Date().toISOString(),
@@ -223,10 +226,11 @@ const PrayerModeration: React.FC<{ user: any }> = ({ user }) => {
                 <div className="flex items-center gap-2 mt-4 md:mt-0 md:ml-auto w-full md:w-auto">
                   <a href={`tel:${req.phone}`} className="flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"><Phone size={18} /></a>
                   <a
-                    href={`https://wa.me/55${req.phone.replace(/\D/g, '')}`}
+                    href={req.phone ? `https://wa.me/55${req.phone.replace(/\D/g, '')}` : '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all"
+                    className={`flex-1 md:flex-none flex justify-center p-3.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-2xl bg-zinc-950 border border-white/5 transition-all ${!req.phone ? 'opacity-20 cursor-not-allowed' : ''}`}
+                    onClick={(e) => !req.phone && e.preventDefault()}
                   >
                     <MessageSquare size={18} />
                   </a>

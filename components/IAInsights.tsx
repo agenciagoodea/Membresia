@@ -16,7 +16,6 @@ import {
   Terminal
 } from 'lucide-react';
 import { generatePastoralInsight, generateSermonDraft } from '../services/geminiService';
-import { MOCK_TENANT } from '../constants';
 
 const IAInsights: React.FC<{ user: any }> = ({ user }) => {
   const [loadingInsight, setLoadingInsight] = useState(false);

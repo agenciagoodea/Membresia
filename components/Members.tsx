@@ -16,7 +16,7 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { MOCK_TENANT, PLAN_CONFIGS } from '../constants';
+import { PLAN_CONFIGS } from '../constants';
 import { LadderStage, UserRole, Member, Cell, MemberOrigin, MemberStatus } from '../types';
 import UpgradeModal from './Shared/UpgradeModal';
 import { memberService } from '../services/memberService';

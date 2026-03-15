@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
-import { MOCK_TENANT, PLAN_CONFIGS } from '../constants';
+import { PLAN_CONFIGS } from '../constants';
 import { Cell, UserRole, Member, MeetingReport, LadderStage, MemberOrigin } from '../types';
 import UpgradeModal from './Shared/UpgradeModal';
 import { cellService } from '../services/cellService';

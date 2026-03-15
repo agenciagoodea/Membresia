@@ -15,7 +15,6 @@ import {
 import { LadderStage, Member, M12Checkpoint } from '../../types';
 import { memberService } from '../../services/memberService';
 import { m12Service } from '../../services/m12Service';
-import { MOCK_TENANT } from '../../constants';
 
 const DEFAULT_STAGE_ACTIVITIES: Record<LadderStage, string[]> = {
   [LadderStage.WIN]: ['Sistema de Oração', 'Consolidação Inicial', 'Visita à Célula', 'Pré-Encontro'],

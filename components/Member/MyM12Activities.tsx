@@ -21,7 +21,6 @@ import { LadderStage, Member, M12Checkpoint, UserRole } from '../../types';
 import { memberService } from '../../services/memberService';
 import { m12Service } from '../../services/m12Service';
 import { cellService } from '../../services/cellService';
-import { MOCK_TENANT } from '../../constants';
 
 const MyM12Activities: React.FC<{ user: any }> = ({ user }) => {
   const [members, setMembers] = useState<Member[]>([]);

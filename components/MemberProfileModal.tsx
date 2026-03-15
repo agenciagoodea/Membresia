@@ -3,7 +3,6 @@ import React from 'react';
 import { X, User, Mail, Phone, MapPin, Target, Calendar, CheckCircle2, TrendingUp, Award, Briefcase, Heart, Users, Zap } from 'lucide-react';
 import { Member, MeetingReport, LadderStage, UserRole, M12Checkpoint } from '../types';
 import { m12Service } from '../services/m12Service';
-import { MOCK_TENANT } from '../constants';
 
 interface MemberProfileModalProps {
   isOpen: boolean;

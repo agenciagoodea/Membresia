@@ -17,7 +17,6 @@ import {
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { LadderStage, M12Checkpoint } from '../../types';
 import { m12Service } from '../../services/m12Service';
-import { MOCK_TENANT } from '../../constants';
 
 const CheckpointManager: React.FC<{ user: any }> = ({ user }) => {
   const [activeStage, setActiveStage] = useState<LadderStage>(LadderStage.WIN);
