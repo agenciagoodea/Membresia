@@ -723,9 +723,22 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 							{member?.status === MemberStatus.PENDING && (
 								<button
 									type="button"
-									onClick={() => {
-										setFormData({ ...formData, status: MemberStatus.ACTIVE });
-										handleSubmit({ preventDefault: () => { } } as any);
+									onClick={async () => {
+										try {
+											setSaving(true);
+											let finalFormData = { ...formData, status: MemberStatus.ACTIVE };
+											if (selectedFile) {
+												const photoUrl = await memberService.uploadAvatar(selectedFile);
+												finalFormData.avatar = photoUrl;
+											}
+											await onSave(finalFormData);
+											onClose();
+										} catch (error: any) {
+											console.error('Erro ao aprovar membro:', error);
+											alert(error?.message || 'Erro ao aprovar o membro.');
+										} finally {
+											setSaving(false);
+										}
 									}}
 									disabled={saving}
 									className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:opacity-50"

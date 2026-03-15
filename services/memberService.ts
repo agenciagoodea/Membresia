@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { Member } from '../types';
+import { Member, MemberStatus } from '../types';
 
 const mapToFrontend = (m: any): Member => ({
 	id: m.id,
@@ -8,7 +8,7 @@ const mapToFrontend = (m: any): Member => ({
 	phone: m.phone,
 	churchId: m.church_id,
 	role: m.role,
-	status: m.status || 'PENDENTE',
+	status: (m.status === 'PENDING' || !m.status) ? MemberStatus.PENDING : m.status,
 	stage: m.stage,
 	cellId: m.cell_id,
 	disciplerId: m.discipler_id,
