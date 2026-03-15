@@ -82,7 +82,7 @@ export const memberService = {
 	async getAll(churchId: string, range?: { from: number; to: number }) {
 		let query = supabase
 			.from('members')
-			.select(ESSENTIAL_COLUMNS)
+			.select('*')
 			.eq('church_id', churchId)
 			.order('name');
 

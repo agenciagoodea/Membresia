@@ -520,6 +520,10 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 												<option key={origin} value={origin} className="bg-zinc-950">{origin}</option>
 											))
 										)}
+										{/* Fallback para valores históricos que não estão no checkpoint nem no enum */}
+										{formData.origin && !Object.values(MemberOrigin).includes(formData.origin as any) && !gainCheckpoints.some(c => c.label === formData.origin) && (
+											<option value={formData.origin} className="bg-zinc-950">{formData.origin}</option>
+										)}
 									</select>
 								</div>
 							</div>
@@ -529,7 +533,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 								<div className="relative">
 									<Heart className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
 									<select
-										value={formData.maritalStatus}
+										value={formData.maritalStatus || 'Solteiro(a)'}
 										onChange={(e) => {
 											const newStatus = e.target.value;
 											setFormData({ ...formData, maritalStatus: newStatus, spouseId: newStatus === 'Casado(a)' ? formData.spouseId : '' });
