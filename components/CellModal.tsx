@@ -11,12 +11,14 @@ interface CellModalProps {
 	onSave: (cell: Partial<Cell>) => Promise<void>;
 	cell?: Cell | null;
 	availableLeaders: Member[];
+	allMembers: Member[];
 }
 
-const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, availableLeaders }) => {
+const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, availableLeaders, allMembers }) => {
 	const [formData, setFormData] = useState<Partial<Cell>>({
 		name: '',
 		leaderId: '',
+		hostId: '',
 		hostName: '',
 		address: '',
 		cep: '',
@@ -144,6 +146,27 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 			} finally {
 				setFetchingCep(false);
 			}
+		}
+	};
+	
+	const handleHostChange = (memberId: string) => {
+		const member = allMembers.find(m => m.id === memberId);
+		if (member) {
+			setFormData(prev => ({
+				...prev,
+				hostId: member.id,
+				hostName: member.name,
+				cep: member.cep || prev.cep,
+				street: member.street || prev.street,
+				number: member.number || prev.number,
+				complement: member.complement || prev.complement,
+				neighborhood: member.neighborhood || prev.neighborhood,
+				city: member.city || prev.city,
+				state: member.state || prev.state,
+				address: member.street ? `${member.street}, ${member.number || ''}, ${member.neighborhood}, ${member.city} - ${member.state}` : prev.address
+			}));
+		} else {
+			setFormData(prev => ({ ...prev, hostId: '', hostName: '' }));
 		}
 	};
 
@@ -325,14 +348,25 @@ const CellModal: React.FC<CellModalProps> = ({ isOpen, onClose, onSave, cell, av
 								<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Anfitrião</label>
 								<div className="relative">
 									<Heart className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-									<input
+									<select
 										required
-										type="text"
-										value={formData.hostName}
-										onChange={(e) => setFormData({ ...formData, hostName: e.target.value })}
-										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
-										placeholder="Quem recebe a célula?"
-									/>
+										value={formData.hostId || formData.hostName}
+										onChange={(e) => {
+											const val = e.target.value;
+											const member = allMembers.find(m => m.id === val || m.name === val);
+											if (member) {
+												handleHostChange(member.id);
+											} else {
+												setFormData({ ...formData, hostName: val, hostId: '' });
+											}
+										}}
+										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
+									>
+										<option value="" className="bg-zinc-950">Selecionar Anfitrião</option>
+										{allMembers.map(m => (
+											<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
+										))}
+									</select>
 								</div>
 							</div>
 

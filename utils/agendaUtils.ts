@@ -119,12 +119,19 @@ export const mergeAgendaItems = (
   ].includes(user?.role);
 
   if (!isManagement) {
+    const myId = user?.id || user?.profile?.id;
+    const myCellId = user?.cellId || user?.profile?.cellId;
+
     if (user?.role === UserRole.CELL_LEADER_DISCIPLE) {
-      // Leader sees cells they lead
-      filteredCells = cells.filter(c => c.leaderId === user.id);
+      // Leader sees cells they lead, host, or are members of
+      filteredCells = cells.filter(c => 
+        c.leaderId === myId || 
+        c.hostId === myId || 
+        c.id === myCellId
+      );
     } else {
       // Member sees only their assigned cell
-      filteredCells = cells.filter(c => c.id === user.cellId);
+      filteredCells = cells.filter(c => c.id === myCellId);
     }
   }
 

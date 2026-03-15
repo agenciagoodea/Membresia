@@ -1,0 +1,12 @@
+-- Migration to add host_id column to Cells table
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS host_id UUID REFERENCES members(id) ON DELETE SET NULL;
+
+-- Ensure other address columns exist (if not already added)
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS logo TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS cep TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS neighborhood TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS street TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS number TEXT;
+ALTER TABLE cells ADD COLUMN IF NOT EXISTS complement TEXT;

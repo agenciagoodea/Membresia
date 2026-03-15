@@ -115,6 +115,7 @@ export interface Cell {
   churchId?: string;
   name: string;
   leaderId: string;
+  hostId?: string;
   hostName: string;
   address: string;
   cep?: string;

@@ -6,6 +6,7 @@ const mapToFrontend = (c: any): Cell => ({
 	churchId: c.church_id,
 	name: c.name,
 	leaderId: c.leader_id,
+	hostId: c.host_id,
 	hostName: c.host_name,
 	address: c.address,
 	cep: c.cep,
@@ -29,6 +30,7 @@ const mapToDb = (c: Partial<Cell> & { church_id?: string }) => {
 	if (c.church_id) db.church_id = c.church_id;
 	if (c.name !== undefined) db.name = c.name;
 	if (c.leaderId !== undefined) db.leader_id = c.leaderId || null;
+	if (c.hostId !== undefined) db.host_id = c.hostId || null;
 	if (c.hostName !== undefined) db.host_name = c.hostName;
 	if (c.address !== undefined) db.address = c.address;
 	if (c.cep !== undefined) db.cep = c.cep;

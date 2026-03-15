@@ -175,7 +175,7 @@ const DashboardEventsWidget = ({ events }: { events: any[] }) => {
             ) : (
               <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col items-center justify-center shrink-0">
                 <span className="text-sm font-black text-amber-500 leading-none">{evt.date.split('-')[2]}</span>
-                <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">{new Date(evt.date).toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+                <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">{new Date(evt.date + 'T12:00:00').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()}</span>
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -183,7 +183,9 @@ const DashboardEventsWidget = ({ events }: { events: any[] }) => {
               <div className="flex flex-wrap items-center gap-3 mt-1.5">
                 <div className="flex items-center gap-1.5">
                   <Calendar size={10} className="text-amber-500/50" />
-                  <span className="text-[9px] text-zinc-500 font-bold uppercase">{new Date(evt.date).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-[9px] text-zinc-500 font-bold uppercase">
+                    {new Date(evt.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()}, {new Date(evt.date + 'T12:00:00').toLocaleDateString('pt-BR')}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock size={10} className="text-amber-500/50" />
@@ -232,7 +234,9 @@ const DashboardEventsWidget = ({ events }: { events: any[] }) => {
                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                        <Calendar size={12} className="text-amber-500" /> Data do Evento
                     </p>
-                    <p className="text-lg font-black text-white">{new Date(selectedEvent.date).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-lg font-black text-white">
+                      {new Date(selectedEvent.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()}, {new Date(selectedEvent.date + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -433,7 +437,7 @@ const PastorDashboard = ({ members, cells, prayers, events }: { members: Member[
 };
 
 const LeaderDashboard = ({ user, members, cells, events }: { user: any, members: Member[], cells: Cell[], events: any[] }) => {
-  const myCell = cells.find(c => c.leaderId === user.id) || (cells.length > 0 ? cells[0] : null);
+  const myCell = cells.find(c => c.leaderId === user.id || c.hostId === user.id) || (cells.length > 0 ? cells[0] : null);
   
   if (!myCell) return (
     <div className="py-20 text-center text-zinc-500 font-black uppercase tracking-[0.5em] animate-pulse">
@@ -442,6 +446,29 @@ const LeaderDashboard = ({ user, members, cells, events }: { user: any, members:
   );
 
   const cellMembers = members.filter(m => m.cellId === myCell.id);
+
+  // Encontrar a próxima ocorrência real da reunião desta célula
+  const cellMeetings = events.filter(e => e.id.startsWith(`cell-${myCell.id}`));
+  const nextMeeting = cellMeetings.length > 0 ? cellMeetings[0] : null;
+
+  const handleWhatsAppNotify = () => {
+    if (!nextMeeting) return;
+    const dateObj = new Date(nextMeeting.date + 'T12:00:00');
+    const dayName = dateObj.toLocaleString('pt-BR', { weekday: 'long' });
+    const dayNum = dateObj.getDate();
+    const monthName = dateObj.toLocaleString('pt-BR', { month: 'long' });
+    
+    const message = `Olá! 👋 Passando para lembrar da nossa próxima reunião da *Célula ${myCell.name}*!
+    
+🗓️ *Data:* ${dayName}, ${dayNum} de ${monthName}
+⏰ *Horário:* ${myCell.meetingTime}
+🏠 *Local:* Casa do(a) ${myCell.hostName}
+📍 *Endereço:* ${myCell.address}
+
+Esperamos por você! Vai ser um tempo precioso! 🔥`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700">
@@ -467,10 +494,12 @@ const LeaderDashboard = ({ user, members, cells, events }: { user: any, members:
             <div className="w-1.5 h-6 bg-blue-600 rounded-full" /> Meus Discípulos
           </h4>
           <div className="space-y-5">
-            {cellMembers.map(m => (
+            {cellMembers.length === 0 ? (
+               <div className="py-10 text-center text-zinc-600 text-[10px] font-black uppercase tracking-widest">Nenhum discípulo vinculado</div>
+            ) : cellMembers.map(m => (
               <div key={m.id} className="flex items-center justify-between p-4 hover:bg-white/5 rounded-[1.5rem] transition-all border border-transparent hover:border-white/5 group">
                 <div className="flex items-center gap-4">
-                  <img src={m.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'} className="w-12 h-12 rounded-full ring-2 ring-white/10 group-hover:ring-blue-500 transition-all object-cover aspect-square" alt="" />
+                  <img src={m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=2563eb&color=fff`} className="w-12 h-12 rounded-full ring-2 ring-white/10 group-hover:ring-blue-500 transition-all object-cover aspect-square" alt="" />
                   <div>
                     <p className="text-sm font-black text-white uppercase">{m.name}</p>
                     <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter">{m.stage}</p>
@@ -488,35 +517,55 @@ const LeaderDashboard = ({ user, members, cells, events }: { user: any, members:
           <h4 className="font-black text-white text-xl mb-10 flex items-center gap-4 uppercase tracking-tighter">
             <div className="w-1.5 h-6 bg-blue-600 rounded-full" /> Próxima Reunião
           </h4>
-          <div className="bg-zinc-900 p-8 rounded-[2rem] border border-white/5 shadow-2xl relative group overflow-hidden">
-            <div className="absolute -right-5 -top-5 opacity-5 group-hover:opacity-10 transition-opacity"><Clock size={120} /></div>
-            <div className="flex items-center gap-6 mb-8">
-              <div className="bg-blue-600 text-white w-20 h-20 rounded-[1.5rem] font-black flex flex-col items-center justify-center shadow-xl shadow-blue-500/20">
-                <p className="text-[10px] uppercase tracking-widest">Ter</p>
-                <p className="text-3xl tracking-tighter leading-none mt-1">11</p>
+          {nextMeeting ? (
+            <div className="bg-zinc-900 p-8 rounded-[2rem] border border-white/5 shadow-2xl relative group overflow-hidden">
+              <div className="absolute -right-5 -top-5 opacity-5 group-hover:opacity-10 transition-opacity"><Clock size={120} /></div>
+              <div className="flex items-center gap-6 mb-8">
+                <div className="bg-blue-600 text-white w-20 h-24 rounded-[1.5rem] font-black flex flex-col items-center justify-center p-2 text-center shadow-xl shadow-blue-500/20">
+                  <p className="text-[10px] uppercase tracking-widest mb-1">
+                    {new Date(nextMeeting.date + 'T12:00:00').toLocaleString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()}
+                  </p>
+                  <p className="text-3xl tracking-tighter leading-none">
+                    {nextMeeting.date.split('-')[2]}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-widest mt-1">
+                    {new Date(nextMeeting.date + 'T12:00:00').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xl font-black text-white uppercase tracking-tight">{myCell.name}</p>
+                  <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest">{myCell.meetingTime} • {myCell.hostName}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xl font-black text-white uppercase tracking-tight">{myCell.name}</p>
-                <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest">{myCell.meetingTime} • {myCell.hostName}</p>
+              <div className="flex items-center gap-3 text-xs text-zinc-400 mb-10 font-black uppercase tracking-widest">
+                <MapPin size={16} className="text-rose-500" /> {myCell.address}
               </div>
+              <button 
+                onClick={handleWhatsAppNotify}
+                className="w-full py-5 bg-white text-zinc-950 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-white/5 text-center"
+              >
+                Notificar via WhatsApp
+              </button>
             </div>
-            <div className="flex items-center gap-3 text-xs text-zinc-400 mb-10 font-black uppercase tracking-widest">
-              <MapPin size={16} className="text-rose-500" /> {myCell.address}
+          ) : (
+            <div className="py-20 bg-zinc-900/50 rounded-[2rem] border border-white/5 border-dashed flex flex-col items-center justify-center text-zinc-600 font-black uppercase tracking-widest text-xs">
+              Nenhuma reunião agendada
             </div>
-            <button className="w-full py-5 bg-white text-zinc-950 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-white/5 text-center">
-              Notificar via WhatsApp
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const MemberDashboard = ({ user, prayers, events, activeTab = 'JOURNEY' }: { user: any, prayers: PrayerRequest[], events: any[], activeTab?: string }) => {
+const MemberDashboard = ({ user, prayers, events, cells, activeTab = 'JOURNEY' }: { user: any, prayers: PrayerRequest[], events: any[], cells: Cell[], activeTab?: string }) => {
   const [mentors, setMentors] = useState<{ leader?: Member, pastor?: Member }>({});
   const [isPrayerModalOpen, setIsPrayerModalOpen] = useState(false);
   const location = useLocation();
+
+  const myCellId = user.cellId || user.profile?.cellId;
+  const myCell = cells.find(c => c.id === myCellId);
+  const myNextMeeting = events.find(e => e.id.startsWith(`cell-${myCellId}`));
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -644,21 +693,28 @@ const MemberDashboard = ({ user, prayers, events, activeTab = 'JOURNEY' }: { use
                     <Layers size={28} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xl font-black uppercase tracking-tight leading-none truncate">Célula Renovo</p>
-                    <p className="text-[10px] text-blue-100 font-black uppercase tracking-[0.1em] mt-1 truncate">Líder: Pr. João Silva</p>
+                    <p className="text-xl font-black uppercase tracking-tight leading-none truncate">{myCell?.name || 'Vínculo Pendente'}</p>
+                    <p className="text-[10px] text-blue-100 font-black uppercase tracking-[0.1em] mt-1 truncate">Líder: {mentors.leader?.name || 'Aguardando'}</p>
                   </div>
                 </div>
                 <div className="space-y-5 px-4 mb-10 flex-1">
                   <div className="flex items-center gap-4 text-zinc-300 text-sm font-bold uppercase tracking-widest">
-                    <Calendar size={18} className="text-zinc-600" /> Terça-feira às 20h
+                    <Calendar size={18} className="text-zinc-600" /> {myCell?.meetingDay || 'A definir'} {myCell?.meetingTime ? `às ${myCell.meetingTime}` : ''}
                   </div>
                   <div className="flex items-center gap-4 text-zinc-300 text-sm font-bold uppercase tracking-widest">
-                    <MapPin size={18} className="text-zinc-600" /> Rua das Flores, 123
+                    <MapPin size={18} className="text-zinc-600" /> {myCell?.address || 'Consulte seu líder'}
                   </div>
                 </div>
-                <button className="w-full py-5 bg-white text-zinc-950 rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-white/5 hover:scale-105 transition-all text-center">
-                  Como Chegar
-                </button>
+                {myCell?.address && (
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(myCell.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-5 bg-white text-zinc-950 rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-white/5 hover:scale-105 transition-all text-center block"
+                  >
+                    Como Chegar
+                  </a>
+                )}
               </div>
 
               <DashboardEventsWidget events={events} />
@@ -719,7 +775,7 @@ const Dashboard: React.FC<{ user: any, activeTab?: string }> = ({ user, activeTa
     case UserRole.CELL_LEADER_DISCIPLE:
       return <LeaderDashboard user={user} members={members} cells={cells} events={mergedEvents} />;
     case UserRole.MEMBER_VISITOR:
-      return <MemberDashboard user={user} prayers={prayers.filter(p => p.email === user.email)} events={mergedEvents} activeTab={activeTab} />;
+      return <MemberDashboard user={user} prayers={prayers.filter(p => p.email === user.email)} events={mergedEvents} cells={cells} activeTab={activeTab} />;
     default:
       return <div className="p-20 text-center text-zinc-500 font-black uppercase tracking-[0.5em] animate-pulse">Acesso Restrito</div>;
   }

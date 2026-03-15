@@ -72,8 +72,10 @@ const Events = ({ user }: { user: any }) => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
+    const date = new Date(dateString + 'T12:00:00');
+    const dayName = date.toLocaleString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase();
     const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
+    return `${dayName}, ${day}/${month}/${year}`;
   };
 
   // Separa eventos futuros (ou hoje) dos passados
@@ -127,10 +129,13 @@ const Events = ({ user }: { user: any }) => {
                         </div>
                       )}
                       
-                      <div className="w-20 h-20 shrink-0 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex flex-col items-center justify-center">
+                      <div className="w-20 h-24 shrink-0 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex flex-col items-center justify-center p-2 text-center">
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                          {new Date(evt.date + 'T12:00:00').toLocaleString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()}
+                        </span>
                         <span className="text-2xl font-black text-blue-500 leading-none">{evt.date.split('-')[2]}</span>
                         <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">
-                          {new Date(evt.date).toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}
+                          {new Date(evt.date + 'T12:00:00').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1 space-y-2">
@@ -173,7 +178,7 @@ const Events = ({ user }: { user: any }) => {
                       </div>
                     </div>
 
-                    {canEdit && !evt.id.startsWith('cell-') && (
+                    {(canEdit && !evt.id.startsWith('cell-') && (user.role === UserRole.MASTER_ADMIN || evt.created_by === user.id || evt.created_by === user.profile?.id)) && (
                       <div className="flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity mt-4 md:mt-0">
                         <button onClick={() => openEditEvent(evt)} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-all border border-white/5">
                           <Edit2 size={16} />
@@ -212,7 +217,7 @@ const Events = ({ user }: { user: any }) => {
                           <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1">{formatDate(evt.date)}</p>
                           <h4 className="text-sm font-bold text-zinc-300 uppercase leading-snug">{evt.title}</h4>
                         </div>
-                        {canEdit && !evt.id.startsWith('cell-') && (
+                         {(canEdit && !evt.id.startsWith('cell-') && (user.role === UserRole.MASTER_ADMIN || evt.created_by === user.id || evt.created_by === user.profile?.id)) && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex">
                             <button onClick={() => openEditEvent(evt)} className="p-1.5 text-zinc-500 hover:text-white">
                               <Edit2 size={12} />

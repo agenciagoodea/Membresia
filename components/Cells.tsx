@@ -29,7 +29,8 @@ import {
   Camera,
   CheckSquare,
   Square,
-  Layers
+  Layers,
+  Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabaseClient';
@@ -44,6 +45,7 @@ import PageHeader from './Shared/PageHeader';
 import { STAGE_ACTIVITIES, isStageComplete, getMissingMilestones } from '../utils/ladderUtils';
 import { generateCellOccurrences } from '../utils/agendaUtils';
 import { cellMeetingService } from '../services/cellMeetingService';
+import MemberProfileModal from './MemberProfileModal';
 const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }: { cell: Cell, onBack: () => void, members: Member[], user: any }) => {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [membersList, setMembersList] = useState<Member[]>(allMembers);
@@ -55,7 +57,7 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
   const [selectedReport, setSelectedReport] = useState<MeetingReport | null>(null);
   const [isEditingReport, setIsEditingReport] = useState(false);
 
-  const { meetingExceptions, refreshData } = useChurch();
+  const { cells, meetingExceptions, refreshData } = useChurch();
   const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false);
   const [exceptionType, setExceptionType] = useState<'CANCELLED' | 'RESCHEDULED'>('CANCELLED');
   const [selectedOccurrence, setSelectedOccurrence] = useState<any>(null);
@@ -333,7 +335,28 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none mb-1">{cell.name}</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none mb-1">{cell.name}</h2>
+            <div className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-full border border-white/5">
+              <span className={`text-[10px] font-black uppercase tracking-widest ${cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                {cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'ATIVA' : 'INATIVA'}
+              </span>
+              <button 
+                onClick={async () => {
+                  try {
+                    const newStatus = (cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING') ? 'INACTIVE' : 'ACTIVE';
+                    await cellService.update(cell.id, { status: newStatus });
+                    refreshData();
+                  } catch (e) {
+                    console.error('Erro ao alternar status:', e);
+                  }
+                }}
+                className={`w-10 h-5 rounded-full relative transition-all duration-300 shadow-inner ${cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'bg-emerald-600' : 'bg-zinc-800'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 shadow-md ${cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
           <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] italic">Gestão Analítica & Cuidado Espiritual</p>
         </div>
       </div>
@@ -350,10 +373,10 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
               <h4 className="text-4xl font-black text-emerald-500 tracking-tighter">{cell.averageAttendance || 0} <span className="text-lg">p.</span></h4>
             </div>
             <div className="bg-zinc-900 p-8 rounded-[2rem] border border-white/5 shadow-2xl flex flex-col justify-between">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Status</p>
-              <span className={`inline-block w-fit text-[9px] font-black px-4 py-1.5 rounded-full border tracking-widest uppercase ${cell.status === 'MULTIPLYING' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]'}`}>
-                {cell.status === 'MULTIPLYING' ? 'Em Multiplicação' : 'Ativa'}
-              </span>
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Oferta Acumulada</p>
+              <h4 className="text-2xl font-black text-emerald-500 tracking-tighter">
+                R$ {reports.reduce((sum, r) => sum + (r.offeringAmount || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </h4>
             </div>
           </div>
 
@@ -373,10 +396,10 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">
-                          {new Date(mtg.date).toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase()}
+                          {new Date(mtg.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }).toUpperCase()}
                         </p>
                         <h5 className="text-lg font-black text-white tracking-tighter">
-                          {new Date(mtg.date).toLocaleDateString('pt-BR')}
+                          {new Date(mtg.date + 'T12:00:00').toLocaleDateString('pt-BR')}
                         </h5>
                       </div>
                       <div className="text-right">
@@ -456,7 +479,7 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
                         <div className="flex items-center gap-3">
                           <Calendar size={18} className="text-zinc-600" />
                           <span className="text-lg font-black text-zinc-100 tracking-tight">
-                            {new Date(report.date).toLocaleDateString('pt-BR')}
+                            {new Date(report.date + 'T12:00:00').toLocaleDateString('pt-BR')}
                           </span>
                         </div>
                         <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full uppercase tracking-widest">R$ {report.offeringAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -496,10 +519,10 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
                           </div>
                           <div>
                             <span className="text-lg font-black text-zinc-100 tracking-tight">
-                              {new Date(exception.original_date).toLocaleDateString('pt-BR')}
+                              {new Date(exception.original_date + 'T12:00:00').toLocaleDateString('pt-BR')}
                             </span>
                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                              {exception.status === 'CANCELLED' ? 'REUNIÃO CANCELADA' : `REAGENDADO PARA ${new Date(exception.new_date).toLocaleDateString('pt-BR')} às ${exception.new_time}`}
+                              {exception.status === 'CANCELLED' ? 'REUNIÃO CANCELADA' : `REAGENDADO PARA ${new Date(exception.new_date + 'T12:00:00').toLocaleDateString('pt-BR')} às ${exception.new_time}`}
                             </p>
                           </div>
                         </div>
@@ -771,7 +794,7 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
                   Detalhes do Relatório
                 </h3>
                 <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-1 flex items-center gap-2">
-                  <Calendar size={12} /> {new Date(selectedReport.date).toLocaleDateString('pt-BR')}
+                  <Calendar size={12} /> {new Date(selectedReport.date + 'T12:00:00').toLocaleDateString('pt-BR')}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -904,6 +927,15 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
           </div>
         </div>
       )}
+      <MemberProfileModal 
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        member={selectedMember}
+        cellReports={reports}
+        allMembers={membersList}
+        cellName={selectedMember ? (cells.find(c => c.id === selectedMember.cellId)?.name || (cells.find(c => c.id === (selectedMember as any).profile?.cellId)?.name) || cell.name) : cell.name}
+        ledCellName={selectedMember ? (cells.find(c => c.leaderId === selectedMember.id)?.name) : undefined}
+      />
     </div>
   );
 };
@@ -924,10 +956,15 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
       return true; // Admin e Pastores veem tudo
     }
     if (user.role === UserRole.CELL_LEADER_DISCIPLE) {
-      // Líder vê a célula que lidera OU a célula que ele é membro
-      const isLeaderOfThisCell = cell.leaderId === user.id || cell.leaderId === user.profile?.id;
-      const isMemberOfThisCell = (user.profile?.cellId === cell.id);
-      return isLeaderOfThisCell || isMemberOfThisCell;
+      // Líder vê a célula que lidera, onde é membro OU onde é anfitrião
+      const myId = user.id || user.profile?.id;
+      const myCellId = user.cellId || user.profile?.cellId;
+      
+      const isLeaderOfThisCell = cell.leaderId === myId;
+      const isHostOfThisCell = cell.hostId === myId;
+      const isMemberOfThisCell = myCellId === cell.id;
+      
+      return isLeaderOfThisCell || isMemberOfThisCell || isHostOfThisCell;
     }
     return false; // Outros cargos não veem rede de células (geralmente nem chegam aqui)
   });
@@ -1062,15 +1099,25 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
 
             <h3 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">{cell.name}</h3>
             
-            <div className="mb-6 space-y-1">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                <User size={12} className="text-blue-500" /> Líder: {leader?.name || 'Não definido'}
+            <div className="mb-6 space-y-2">
+              <p className="text-[11px] font-bold text-zinc-400 flex items-center gap-3 tracking-tight">
+                <User size={14} className="text-blue-500 opacity-70" /> 
+                <span>Líder: <b className="text-zinc-200 uppercase">{leader?.name || 'Não definido'}</b></span>
               </p>
               {spouse && (
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                  <Heart size={12} className="text-rose-500" /> Cônjuge: {spouse.name}
+                <p className="text-[11px] font-bold text-zinc-400 flex items-center gap-3 tracking-tight">
+                  <Heart size={14} className="text-rose-500 opacity-70" /> 
+                  <span>Cônjuge: <b className="text-zinc-200 uppercase">{spouse.name}</b></span>
                 </p>
               )}
+              <p className="text-[11px] font-bold text-zinc-400 flex items-center gap-3 tracking-tight">
+                <Home size={14} className="text-amber-500 opacity-70" /> 
+                <span>Anfitrião: <b className="text-zinc-200 uppercase">{cell.hostName || 'Não definido'}</b></span>
+              </p>
+              <p className="text-[11px] font-bold text-zinc-400 flex items-center gap-3 tracking-tight truncate">
+                <MapPin size={14} className="text-emerald-500 opacity-70" /> 
+                <span><b className="text-zinc-200 uppercase">{cell.address || 'Sem endereço'}</b></span>
+              </p>
             </div>
 
             <div className="flex items-center gap-4 text-xs font-bold text-zinc-500 mb-8 uppercase tracking-widest">
@@ -1124,6 +1171,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
         onSave={handleSaveCell}
         cell={editingCell}
         availableLeaders={members.filter(m => m.role === UserRole.CELL_LEADER_DISCIPLE || m.role === UserRole.PASTOR)}
+        allMembers={members}
       />
     </div>
   );
