@@ -27,6 +27,8 @@ const PublicRegistration = () => {
 	const [formData, setFormData] = useState({
 		name: '', email: '', phone: '', cpf: '', password: '', confirmPassword: '',
 		cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '',
+		birthDate: '', sex: '' as 'MASCULINO' | 'FEMININO' | '', hasChildren: false,
+		children: [] as { id: string, name: string, birthDate: string, photo?: string }[],
 		origin: MemberOrigin.EVANGELISM as string, role: UserRole.MEMBER_VISITOR as UserRole,
 		cellId: '', disciplerId: '', pastorId: '', maritalStatus: '', spouseId: '', avatar: '',
 		newCellName: '', isCreatingCell: false
@@ -143,6 +145,40 @@ const PublicRegistration = () => {
 		reader.readAsDataURL(file);
 	};
 
+	const handleAddChild = () => {
+		setFormData(prev => ({
+			...prev,
+			children: [...prev.children, { id: Date.now().toString(), name: '', birthDate: '', photo: '' }]
+		}));
+	};
+
+	const handleRemoveChild = (id: string) => {
+		setFormData(prev => ({
+			...prev,
+			children: prev.children.filter(c => c.id !== id)
+		}));
+	};
+
+	const handleChildChange = (id: string, field: string, value: string) => {
+		setFormData(prev => ({
+			...prev,
+			children: prev.children.map(c => c.id === id ? { ...c, [field]: value } : c)
+		}));
+	};
+
+	const handleChildPhotoSelect = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			setFormData(prev => ({
+				...prev,
+				children: prev.children.map(c => c.id === id ? { ...c, photo: reader.result as string, file: file } : c)
+			}));
+		};
+		reader.readAsDataURL(file);
+	};
+
 	const onCropComplete = React.useCallback((_croppedArea: any, croppedAreaPixels: any) => {
 		setCroppedAreaPixels(croppedAreaPixels);
 	}, []);
@@ -200,12 +236,32 @@ const PublicRegistration = () => {
 				finalAvatar = await memberService.uploadAvatar(selectedFile);
 			}
 
+			const finalChildren = [];
+			if (formData.hasChildren) {
+				for (const child of formData.children) {
+					let childAvatar = child.photo || '';
+					if ((child as any).file) {
+						childAvatar = await memberService.uploadAvatar((child as any).file);
+					}
+					finalChildren.push({
+						id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+						name: child.name,
+						birthDate: child.birthDate,
+						photo: childAvatar
+					});
+				}
+			}
+
 			const res = await memberService.create({
 				name: formData.name,
 				email: formData.email,
 				login: formData.email,
 				phone: formData.phone,
 				cpf: formData.cpf,
+				birthDate: formData.birthDate,
+				sex: formData.sex,
+				hasChildren: formData.hasChildren,
+				children: formData.hasChildren ? finalChildren : [],
 				cep: formData.cep,
 				street: formData.street,
 				number: formData.number,
@@ -448,6 +504,18 @@ const PublicRegistration = () => {
 									</div>
 								</div>
 								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Data de Nascimento</label>
+									<input type="date" required value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium [color-scheme:dark]" />
+								</div>
+								<div className="space-y-3">
+									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Sexo</label>
+									<select required value={formData.sex} onChange={e => setFormData({ ...formData, sex: e.target.value as any })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<option value="" className="bg-zinc-900">Selecione...</option>
+										<option value="MASCULINO" className="bg-zinc-900">Masculino</option>
+										<option value="FEMININO" className="bg-zinc-900">Feminino</option>
+									</select>
+								</div>
+								<div className="space-y-3">
 									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Número do CPF</label>
 									<div className="relative group">
 										<ShieldCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" />
@@ -475,6 +543,55 @@ const PublicRegistration = () => {
 										</select>
 									</div>
 								)}
+
+								<div className="md:col-span-2 mt-6">
+									<div className="flex items-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.3em] mb-6">
+										<span className="shrink-0">Filhos / Dependentes</span>
+										<div className="h-px bg-white/10 w-full" />
+									</div>
+
+									<div className="flex items-center gap-3 mb-6">
+										<input type="checkbox" id="hasChildren" checked={formData.hasChildren} onChange={e => setFormData({ ...formData, hasChildren: e.target.checked })} className="w-5 h-5 rounded overflow-hidden bg-zinc-900 border-white/10 text-emerald-500 focus:ring-emerald-500 cursor-pointer" />
+										<label htmlFor="hasChildren" className="text-sm font-medium text-white cursor-pointer select-none">Possui filhos?</label>
+									</div>
+
+									{formData.hasChildren && (
+										<div className="space-y-4">
+											{formData.children.map((child, index) => (
+												<div key={child.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl flex flex-col md:flex-row gap-4 items-start md:items-center relative animate-in fade-in slide-in-from-top-2">
+													<div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-white/20 shrink-0 overflow-hidden relative cursor-pointer group flex items-center justify-center">
+														{child.photo ? (
+															<img src={child.photo} alt="Filho" className="w-full h-full object-cover" />
+														) : (
+															<Camera size={20} className="text-zinc-500 group-hover:text-emerald-400 transition-colors" />
+														)}
+														<input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleChildPhotoSelect(child.id, e)} />
+													</div>
+													
+													<div className="flex-1 space-y-3 w-full">
+														<div>
+															<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2 block mb-1">Nome do Filho(a)</label>
+															<input required value={child.name} onChange={e => handleChildChange(child.id, 'name', e.target.value)} className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-600" placeholder="Nome completo..." />
+														</div>
+														<div>
+															<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2 block mb-1">Data de Nascimento</label>
+															<input required type="date" value={child.birthDate} onChange={e => handleChildChange(child.id, 'birthDate', e.target.value)} className="w-full bg-white/5 border border-white/5 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all [color-scheme:dark]" />
+														</div>
+													</div>
+													
+													<button type="button" onClick={() => handleRemoveChild(child.id)} className="absolute top-4 right-4 md:static p-2 text-zinc-500 hover:text-rose-500 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all">
+														<X size={16} />
+													</button>
+												</div>
+											))}
+											
+											<button type="button" onClick={handleAddChild} className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-emerald-500/30 text-zinc-400 hover:text-emerald-400 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+												<UserPlus size={16} />
+												Adicionar Filho(a)
+											</button>
+										</div>
+									)}
+								</div>
 							</div>
 
 							{/* Seção 3: Endereço */}
