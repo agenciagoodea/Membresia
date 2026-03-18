@@ -40,6 +40,7 @@ import UpgradeModal from './Shared/UpgradeModal';
 import { cellService } from '../services/cellService';
 import { memberService } from '../services/memberService';
 import { meetingReportService } from '../services/meetingReportService';
+import { churchService } from '../services/churchService';
 import CellModal from './CellModal';
 import PageHeader from './Shared/PageHeader';
 import { STAGE_ACTIVITIES, isStageComplete, getMissingMilestones } from '../utils/ladderUtils';
@@ -79,23 +80,20 @@ const CellDetailView = ({ cell, onBack, members: allMembers, user: currentUser }
   };
 
   const cellMembers = membersList.filter(m => m.cellId === cell.id);
-  const leaderId = cell.leaderId;
-  const leader = membersList.find(m => m.id === leaderId);
-
-  let leadersList: Member[] = [];
-  let disciplesList: Member[] = [];
-
-  if (leader) {
-    leadersList.push(leader);
-    if (leader.maritalStatus === 'Casado(a)' && leader.spouseId) {
-      const spouse = membersList.find(m => m.id === leader.spouseId);
-      if (spouse && !leadersList.find(l => l.id === spouse.id)) {
+  const leaders = allMembers.filter(m => (cell.leaderIds || []).includes(m.id) || m.id === cell.leaderId);
+  const leadersList: Member[] = [...leaders];
+  
+  // Incluir cônjuges apenas se não estiverem já na lista e forem casados
+  leaders.forEach(l => {
+    if (l.maritalStatus === 'Casado(a)' && l.spouseId) {
+      const spouse = allMembers.find(m => m.id === l.spouseId);
+      if (spouse && !leadersList.find(existing => existing.id === spouse.id)) {
         leadersList.push(spouse);
       }
     }
-  }
+  });
 
-  disciplesList = cellMembers.filter(m => !leadersList.find(l => l.id === m.id));
+  const disciplesList = cellMembers.filter(m => !leadersList.find(l => l.id === m.id));
 
   const isLeader = 
     currentUser.role === UserRole.MASTER_ADMIN || 
@@ -1091,6 +1089,23 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isCellModalOpen, setIsCellModalOpen] = useState(false);
   const [editingCell, setEditingCell] = useState<Cell | null>(null);
+  const [inviteCell, setInviteCell] = useState<Cell | null>(null);
+  const [churchSlug, setChurchSlug] = useState<string>('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    const fetchSlug = async () => {
+      if (user?.church_id || user?.churchId) {
+        try {
+          const c = await churchService.getById(user.church_id || user.churchId);
+          setChurchSlug(c.slug);
+        } catch (err) {
+          console.error('Erro ao buscar church slug:', err);
+        }
+      }
+    };
+    fetchSlug();
+  }, [user]);
 
   const planLimits = PLAN_CONFIGS[user.church_plan || 'PRO'];
   const isLimitReached = cells.length >= planLimits.maxCells;
@@ -1105,7 +1120,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
       const myId = user.id || user.profile?.id;
       const myCellId = user.cellId || user.profile?.cellId;
       
-      const isLeaderOfThisCell = cell.leaderId === myId;
+      const isLeaderOfThisCell = (cell.leaderIds || []).includes(myId) || cell.leaderId === myId;
       const isHostOfThisCell = cell.hostId === myId;
       const isMemberOfThisCell = myCellId === cell.id;
       
@@ -1166,9 +1181,9 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
   }
 
   const canEditCell = (cell: Cell) => {
-    if (user.role === UserRole.CHURCH_ADMIN || user.role === UserRole.MASTER_ADMIN) return true;
-    // Pastor e Líder só editam se forem o líder da célula
-    return cell.leaderId === user.profile?.id || cell.leaderId === user.id;
+    if (user.role === UserRole.CHURCH_ADMIN || user.role === UserRole.MASTER_ADMIN || user.role === UserRole.PASTOR) return true;
+    const myId = user.id || user.profile?.id;
+    return (cell.leaderIds || []).includes(myId) || cell.leaderId === myId;
   };
 
   return (
@@ -1197,16 +1212,17 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
           <table className="w-full text-left">
             <thead className="bg-zinc-950/50 text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">
               <tr>
-                <th className="px-10 py-6">Célula / Logo</th>
-                <th className="px-6 py-6 font-black uppercase tracking-widest">Líderes</th>
-                <th className="px-6 py-6 text-center font-black uppercase tracking-widest">Integrantes</th>
+                <th className="px-10 py-6">Logo / Célula</th>
+                <th className="px-6 py-6 font-black uppercase tracking-widest">Líder(es)</th>
+                <th className="px-6 py-6 text-center font-black uppercase tracking-widest">Membros</th>
                 <th className="px-6 py-6 text-center font-black uppercase tracking-widest">Status</th>
                 <th className="px-6 py-6 text-center font-black uppercase tracking-widest">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {cells.map((cell) => {
-                const leader = members.find(m => m.id === cell.leaderId);
+              {visibleCells.map((cell) => {
+                const leaders = members.filter(m => (cell.leaderIds || []).includes(m.id) || m.id === cell.leaderId);
+                const leaderNames = leaders.length > 0 ? leaders.map(l => l.name).join(' & ') : 'Sem Líder';
                 const isLeader = canEditCell(cell);
 
                 return (
@@ -1225,9 +1241,11 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
                     <td className="px-6 py-6">
                       <div className="flex flex-col gap-1">
                         <p className="text-xs font-black text-zinc-300 uppercase leading-none">
-                          {leader?.name || 'Sem Líder'}
+                          {leaderNames}
                         </p>
-                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none">Líder Principal</p>
+                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none">
+                          {leaders.length > 1 ? 'Líderes Responsáveis' : 'Líder Principal'}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-6 text-center text-sm font-black text-white">
@@ -1239,18 +1257,59 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
                       </span>
                     </td>
                     <td className="px-6 py-6 text-center">
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5" onClick={e => e.stopPropagation()}>
+                        <button 
+                          onClick={() => setInviteCell(cell)}
+                          className="p-2.5 bg-zinc-900 border border-white/5 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-all"
+                          title="Enviar Convite"
+                        >
+                          <Send size={16} />
+                        </button>
+
+                        <button 
+                          onClick={() => setSelectedCell(cell)}
+                          className="p-2.5 bg-zinc-900 border border-white/5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
+                          title="Gerenciar Célula"
+                        >
+                          <FileText size={16} />
+                        </button>
+
                         {isLeader && (
                           <>
-                            <button onClick={() => { setEditingCell(cell); setIsCellModalOpen(true); }} className="p-2.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-transparent hover:border-white/5">
+                            <button 
+                              onClick={async () => {
+                                const newStatus = (cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING') ? 'INACTIVE' : 'ACTIVE';
+                                try {
+                                  await cellService.update(cell.id, { status: newStatus });
+                                  await refreshData();
+                                } catch (e) {
+                                  console.error(e);
+                                }
+                              }}
+                              className={`p-2.5 bg-zinc-900 border border-white/5 transition-all rounded-xl ${cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'text-emerald-500 hover:text-amber-400 hover:bg-amber-400/10' : 'text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/10'}`}
+                              title={cell.status === 'ACTIVE' || cell.status === 'MULTIPLYING' ? 'Desativar Célula' : 'Ativar Célula'}
+                            >
+                              <Zap size={16} />
+                            </button>
+
+                            <button 
+                              onClick={() => { setEditingCell(cell); setIsCellModalOpen(true); }}
+                              className="p-2.5 bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                              title="Editar Dados"
+                            >
                               <Edit2 size={16} />
                             </button>
-                            <button onClick={() => handleDeleteCell(cell.id)} className="p-2.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-transparent hover:border-white/5">
+
+                            <button 
+                              onClick={() => handleDeleteCell(cell.id)}
+                              className="p-2.5 bg-zinc-900 border border-white/5 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                              title="Excluir Célula"
+                            >
                               <Trash2 size={16} />
                             </button>
                           </>
                         )}
-                        <ChevronRight size={18} className="text-zinc-700" />
+                        <ChevronRight size={18} className="text-zinc-800 ml-2 opacity-20" />
                       </div>
                     </td>
                   </tr>
@@ -1258,7 +1317,7 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
               })}
             </tbody>
           </table>
-          {cells.length === 0 && (
+          {visibleCells.length === 0 && (
             <div className="py-32 text-center text-zinc-600">
               <Layers size={64} className="mx-auto mb-6 opacity-10" />
               <p className="text-sm font-black uppercase tracking-widest">Nenhuma célula encontrada</p>
@@ -1279,9 +1338,96 @@ const Cells: React.FC<{ user: any }> = ({ user }) => {
         onClose={() => setIsCellModalOpen(false)}
         onSave={handleSaveCell}
         cell={editingCell}
-        availableLeaders={members.filter(m => m.role === UserRole.CELL_LEADER_DISCIPLE || m.role === UserRole.PASTOR)}
+        availableLeaders={members.filter(m => {
+          const isLeader = m.role === UserRole.CELL_LEADER_DISCIPLE || m.role === 'LEADER' || m.role === 'CELL_LEADER' || m.role === 'CELL_LEADER_DISCIPLE';
+          const isPastor = m.role === UserRole.PASTOR || m.role === 'PASTOR';
+          const isAdmin = m.role === UserRole.CHURCH_ADMIN || m.role === 'ADMIN' || m.role === 'CHURCH_ADMIN';
+          return isLeader || isPastor || isAdmin;
+        })}
         allMembers={members}
       />
+
+      {inviteCell && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setInviteCell(null)} />
+          <div className="relative bg-zinc-900 w-full max-w-lg rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-zinc-950/50">
+              <div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Convite Oficial</h3>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Selecione como enviar o link de cadastro</p>
+              </div>
+              <button onClick={() => setInviteCell(null)} className="p-3 hover:bg-white/10 rounded-2xl transition-all text-zinc-500 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 space-y-6 text-center">
+              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500">
+                <Send size={32} />
+              </div>
+              <p className="text-sm font-medium text-zinc-300">
+                Envie este link para convidar novas pessoas para a célula <span className="text-white font-black">{inviteCell.name}</span>. Ao acessar, elas serão direcionadas para o formulário de cadastro já com a célula e líderes preenchidos automaticamente.
+              </p>
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5 flex flex-col items-center gap-3">
+                <span className="text-xs font-mono text-zinc-500 truncate w-full px-2">{`${window.location.origin}/#/cadastro/${churchSlug}?cell=${inviteCell.id}`}</span>
+                <div className="flex gap-4 w-full">
+                  <div className="flex-1 flex flex-col items-center min-w-0">
+                    <button 
+                      onClick={() => {
+                        const link = `${window.location.origin}/#/cadastro/${churchSlug}?cell=${inviteCell.id}`;
+                        if (navigator.clipboard && window.isSecureContext) {
+                          navigator.clipboard.writeText(link).then(() => {
+                            setCopiedLink(true);
+                            setTimeout(() => setCopiedLink(false), 2000);
+                          }).catch(err => {
+                            console.error('Clipboard copy failed:', err);
+                            // Fallback if promise fails
+                            copyFallback(link);
+                          });
+                        } else {
+                          copyFallback(link);
+                        }
+
+                        function copyFallback(text: string) {
+                          const textArea = document.createElement("textarea");
+                          textArea.value = text;
+                          textArea.style.position = "fixed";
+                          textArea.style.left = "-999999px";
+                          document.body.appendChild(textArea);
+                          textArea.focus();
+                          textArea.select();
+                          try {
+                            document.execCommand('copy');
+                            setCopiedLink(true);
+                            setTimeout(() => setCopiedLink(false), 2000);
+                          } catch (err) {
+                            console.error('Fallback copy refused', err);
+                            alert("Não foi possível copiar o link automaticamente. Por favor, copie do campo acima.");
+                          }
+                          document.body.removeChild(textArea);
+                        }
+                      }}
+                      className="w-full py-3 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      Copiar Link
+                    </button>
+                    {copiedLink && <span className="text-[10px] font-bold text-emerald-400 mt-2 block animate-in fade-in slide-in-from-bottom-1">Link copiado!</span>}
+                  </div>
+                  <div className="flex-1 flex flex-col items-center min-w-0">
+                    <a 
+                      href={`https://wa.me/?text=${encodeURIComponent(`Olá! Quero convidar você para fazer parte da nossa célula ${inviteCell.name}. Faça seu cadastro através deste link rápido: ${window.location.origin}/#/cadastro/${churchSlug}?cell=${inviteCell.id}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                    >
+                      WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

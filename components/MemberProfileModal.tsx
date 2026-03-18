@@ -302,8 +302,12 @@ const MemberProfileModal: React.FC<MemberProfileModalProps> = ({ isOpen, onClose
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(member.children || []).map((child) => (
                   <div key={child.id} className="p-4 bg-zinc-900/50 border border-white/5 rounded-2xl flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-zinc-500">
-                      <User size={24} />
+                    <div className="w-12 h-12 bg-white/5 rounded-xl overflow-hidden flex items-center justify-center text-zinc-500 border border-white/5">
+                      {child.photo ? (
+                        <img src={child.photo} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        <User size={24} />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-black text-white uppercase truncate">{child.name}</p>

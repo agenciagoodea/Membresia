@@ -515,14 +515,13 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 										{allMembers
 											.filter(m => {
 												if (m.id === member?.id) return false;
-												// Regra: Ocultar admin para membros e líderes de célula
-												const hideAdmin = formData.role === UserRole.MEMBER_VISITOR || formData.role === UserRole.CELL_LEADER_DISCIPLE;
-												if (hideAdmin && m.role === UserRole.CHURCH_ADMIN) return false;
-
-												if (formData.role === UserRole.PASTOR) {
-													return m.role === UserRole.CHURCH_ADMIN;
-												}
-												return m.role === UserRole.CELL_LEADER_DISCIPLE || m.role === UserRole.PASTOR || m.role === UserRole.CHURCH_ADMIN;
+												// Mais permissivo nas roles para garantir visibilidade durante transição
+												const isLeader = m.role === UserRole.CELL_LEADER_DISCIPLE || m.role === 'LEADER' || m.role === 'CELL_LEADER' || m.role === 'CELL_LEADER_DISCIPLE';
+												const isPastor = m.role === UserRole.PASTOR || m.role === 'PASTOR';
+												const isAdmin = m.role === UserRole.CHURCH_ADMIN || m.role === 'ADMIN' || m.role === 'CHURCH_ADMIN';
+												
+												if (formData.role === UserRole.PASTOR) return isAdmin;
+												return isLeader || isPastor || isAdmin;
 											})
 											.map(m => (
 												<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
@@ -544,11 +543,13 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 										{allMembers
 											.filter(m => {
 												if (m.id === member?.id) return false;
-												return m.role === UserRole.PASTOR || m.role === UserRole.CHURCH_ADMIN;
+												const isPastor = m.role === UserRole.PASTOR || m.role === 'PASTOR';
+												const isAdmin = m.role === UserRole.CHURCH_ADMIN || m.role === 'ADMIN' || m.role === 'CHURCH_ADMIN';
+												return isPastor || isAdmin;
 											})
 											.map(m => {
 												const spouse = allMembers.find(s => s.id === m.spouseId);
-												const label = m.maritalStatus === 'Casado(a)' && spouse 
+												const label = (m.maritalStatus === 'Casado(a)' || m.marital_status === 'Casado(a)') && spouse 
 													? `${m.name} e ${spouse.name}` 
 													: m.name;
 												return (
@@ -630,7 +631,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 										>
 											<option value="" className="bg-zinc-950">Selecione o Cônjuge</option>
 											{allMembers
-												.filter(m => m.id !== member?.id && m.maritalStatus === 'Casado(a)')
+												.filter(m => m.id !== member?.id && (m.maritalStatus === 'Casado(a)' || m.marital_status === 'Casado(a)'))
 												.map(m => (
 													<option key={m.id} value={m.id} className="bg-zinc-950">{m.name}</option>
 												))}
@@ -709,6 +710,40 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 															className="w-full bg-zinc-950 border border-white/5 rounded-xl py-3 px-4 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
 															placeholder="000.000.000-00"
 														/>
+													</div>
+													<div className="space-y-2 sm:col-span-2">
+														<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Foto (Opcional)</label>
+														<div className="flex items-center gap-4">
+															<div className="relative w-16 h-16 rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden flex items-center justify-center group/child">
+																{child.photo ? (
+																	<img src={child.photo} className="w-full h-full object-cover" alt="" />
+																) : (
+																	<Camera size={20} className="text-zinc-700" />
+																)}
+																<input 
+																	type="file" 
+																	className="absolute inset-0 opacity-0 cursor-pointer" 
+																	accept="image/*"
+																	onChange={async (e) => {
+																		const file = e.target.files?.[0];
+																		if (file) {
+																			try {
+																				const photoUrl = await memberService.uploadAvatar(file);
+																				const newChildren = [...(formData.children || [])];
+																				newChildren[index].photo = photoUrl;
+																				setFormData({ ...formData, children: newChildren });
+																			} catch (err) {
+																				console.error("Erro ao subir foto do filho:", err);
+																				alert("Erro ao subir imagem.");
+																			}
+																		}
+																	}}
+																/>
+															</div>
+															<div className="flex-1">
+																<p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Clique para enviar <br />foto do filho(a)</p>
+															</div>
+														</div>
 													</div>
 												</div>
 											</div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChurchTenant, UserRole, LadderStage, MemberOrigin, Cell, Member, MemberStatus } from '../../types';
 import { churchService } from '../../services/churchService';
 import { memberService } from '../../services/memberService';
@@ -11,6 +11,7 @@ import getCroppedImg from '../Shared/cropImage';
 const PublicRegistration = () => {
 	const { slug } = useParams<{ slug: string }>();
 	const navigate = useNavigate();
+	const { search } = useLocation();
 	const [church, setChurch] = useState<ChurchTenant | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
@@ -19,6 +20,7 @@ const PublicRegistration = () => {
 	const [cells, setCells] = useState<Cell[]>([]);
 	const [members, setMembers] = useState<Member[]>([]);
 	const [fetchingCep, setFetchingCep] = useState(false);
+	const [invitedCellName, setInvitedCellName] = useState<string>('');
 
 	const [formData, setFormData] = useState({
 		name: '', email: '', phone: '', cpf: '', password: '', confirmPassword: '',
@@ -51,6 +53,26 @@ const PublicRegistration = () => {
 					]);
 					setCells(fetchedCells);
 					setMembers(fetchedMembers);
+
+					// Pre-fill cell, leader, and pastor if coming from invite link
+					const queryParams = new URLSearchParams(search);
+					const cellParam = queryParams.get('cell');
+					if (cellParam) {
+						const targetCell = fetchedCells.find(c => c.id === cellParam);
+						if (targetCell) {
+							// Use the primary leader or the first from leaderIds array
+							const primaryLeaderId = targetCell.leaderId || (targetCell.leaderIds && targetCell.leaderIds[0]) || '';
+							const leader = fetchedMembers.find(m => m.id === primaryLeaderId);
+							
+							setFormData(prev => ({
+								...prev,
+								cellId: cellParam,
+								disciplerId: primaryLeaderId,
+								pastorId: leader?.pastorId || ''
+							}));
+							setInvitedCellName(targetCell.name);
+						}
+					}
 				}
 			} catch (err) {
 				console.error("Igreja não encontrada", err);
@@ -59,7 +81,7 @@ const PublicRegistration = () => {
 			}
 		};
 		loadChurch();
-	}, [slug]);
+	}, [slug, search]);
 
 	const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		let cep = e.target.value.replace(/\D/g, '');
@@ -341,7 +363,9 @@ const PublicRegistration = () => {
 					<div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-6 lg:p-16 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
 						<div className="mb-12 text-center">
 							<span className="text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-3 block">Ambiente de Cadastro</span>
-							<h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Ficha Ministerial</h2>
+							<h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">
+								{invitedCellName ? `Convite à Célula ${invitedCellName}` : 'Ficha Ministerial'}
+							</h2>
 							<p className="text-zinc-400 text-xs font-medium uppercase tracking-widest mt-2 opacity-60">Sincronizando seus dados com a rede local</p>
 						</div>
 
@@ -483,7 +507,7 @@ const PublicRegistration = () => {
 
 								<div className="space-y-3">
 									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Cargo / Perfil</label>
-									<select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+									<select disabled={!!invitedCellName} value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 										<option value={UserRole.MEMBER_VISITOR} className="bg-zinc-900">Membro</option>
 										<option value={UserRole.CELL_LEADER_DISCIPLE} className="bg-zinc-900">Líder de Célula</option>
 										<option value={UserRole.PASTOR} className="bg-zinc-900">Pastor</option>
@@ -512,7 +536,7 @@ const PublicRegistration = () => {
 									{formData.isCreatingCell ? (
 										<input value={formData.newCellName} onChange={e => setFormData({ ...formData, newCellName: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium placeholder:text-zinc-700" placeholder="Nome da Nova Célula..." />
 									) : (
-										<select value={formData.cellId} onChange={e => setFormData({ ...formData, cellId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+										<select disabled={!!invitedCellName} value={formData.cellId} onChange={e => setFormData({ ...formData, cellId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 											<option value="" className="bg-zinc-900">Ainda não participo...</option>
 											{cells.map(c => <option key={c.id} value={c.id} className="bg-zinc-900">{c.name}</option>)}
 										</select>
@@ -521,7 +545,7 @@ const PublicRegistration = () => {
 
 								<div className="space-y-3">
 									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Líder Direto / Cuidado</label>
-									<select value={formData.disciplerId} onChange={e => setFormData({ ...formData, disciplerId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+									<select disabled={!!invitedCellName} value={formData.disciplerId} onChange={e => setFormData({ ...formData, disciplerId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 										<option value="" className="bg-zinc-900">Não tenho / Não sei</option>
 										{members
 											.filter(m => {
@@ -535,7 +559,7 @@ const PublicRegistration = () => {
 
 								<div className="space-y-3">
 									<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Pastor(a) Supervisor</label>
-									<select value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer">
+									<select disabled={!!invitedCellName} value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })} className="w-full bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl py-5 px-6 text-sm text-white focus:outline-none focus:border-amber-500/50 focus:bg-white/10 transition-all font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
 										<option value="" className="bg-zinc-900">Não tenho / Não sei</option>
 										{members
 											.filter(m => m.role === UserRole.PASTOR)

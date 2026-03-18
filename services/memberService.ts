@@ -34,6 +34,10 @@ const mapToFrontend = (m: any): Member => ({
 	login: m.login,
 	password: m.password,
 	birthDate: m.birth_date,
+	sex: m.sex,
+	hasChildren: m.has_children,
+	children: m.children || [],
+	leadingCellIds: m.leading_cell_ids || [],
 });
 
 const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
@@ -72,6 +76,10 @@ const mapToDb = (m: Partial<Member> & { church_id?: string }) => {
 	if (m.login !== undefined) db.login = m.login;
 	if (m.password !== undefined) db.password = m.password;
 	if (m.birthDate !== undefined) db.birth_date = m.birthDate;
+	if (m.sex !== undefined) db.sex = m.sex;
+	if (m.hasChildren !== undefined) db.has_children = m.hasChildren;
+	if (m.children !== undefined) db.children = m.children;
+	if (m.leadingCellIds !== undefined) db.leading_cell_ids = m.leadingCellIds;
 	return db;
 };
 
