@@ -41,7 +41,8 @@ import { memberService } from '../services/memberService';
 import { churchService } from '../services/churchService';
 import { cellService } from '../services/cellService';
 import { supabase } from '../services/supabaseClient';
-import { Member, ChurchTenant, UserRole, Cell } from '../types';
+import { m12Service } from '../services/m12Service';
+import { Member, ChurchTenant, UserRole, Cell, LadderStage, M12Activity } from '../types';
 
 const Settings: React.FC<{ user: any }> = ({ user }) => {
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
 
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [allCells, setAllCells] = useState<Cell[]>([]);
+  const [winActivities, setWinActivities] = useState<M12Activity[]>([]);
   const [fetchingCep, setFetchingCep] = useState(false);
 
   const calculateAge = (dateString: string) => {
@@ -135,7 +137,6 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
         spouseId: user.spouseId || user.user_metadata?.spouse_id || '',
         hasChildren: user.hasChildren || user.user_metadata?.has_children || false,
         children: user.children || user.user_metadata?.children || [],
-        // Garantir campos de endereço iniciais do cache
         cep: user.cep || user.user_metadata?.cep || '',
         street: user.street || user.user_metadata?.street || '',
         state: user.state || user.user_metadata?.state || '',
@@ -176,11 +177,11 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
       try {
         setLoading(true);
 
-        // Buscar em paralelo: dados da igreja + membros + células
-        const [churchRes, membersList, cellsList] = await Promise.all([
-          churchService.getById(effectiveChurchId).catch(() => null),
+        const [churchRes, membersList, cellsList, m12Acts] = await Promise.all([
+          churchService.getBySlug(user.churchSlug || user.user_metadata?.church_slug).catch(() => null),
           memberService.getAll(effectiveChurchId).catch(() => []),
-          cellService.getAll(effectiveChurchId).catch(() => [])
+          cellService.getAll(effectiveChurchId).catch(() => []),
+          m12Service.getActivities(effectiveChurchId).catch(() => [])
         ]);
 
         if (!cancelled) {
@@ -190,6 +191,7 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
           }
           setAllMembers(membersList);
           setAllCells(cellsList);
+          setWinActivities(m12Acts.filter(a => a.stage === LadderStage.WIN && a.isActive));
 
           // Se ainda não temos o perfil (não buscamos globalmente), buscar na lista da igreja
           if (!myProfile) {
@@ -217,6 +219,32 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
     fetchData();
     return () => { cancelled = true; };
   }, [user?.id, user?.churchId]);
+
+  const handleCellChange = (cellId: string) => {
+    const linkedCell = allCells.find(c => c.id === cellId);
+    const updates: any = { cellId };
+
+    if (linkedCell && linkedCell.leaderIds && linkedCell.leaderIds.length > 0) {
+      // Pega o primeiro líder como discipulador sugerido
+      const firstLeaderId = linkedCell.leaderIds[0];
+      const leaderMember = allMembers.find(m => m.id === firstLeaderId);
+      
+      if (leaderMember) {
+        updates.disciplerId = leaderMember.id;
+        // Sugere o pastor do líder da célula
+        if (leaderMember.pastorId) {
+          updates.pastorId = leaderMember.pastorId;
+        } else if (leaderMember.disciplerId) {
+          const leaderDiscipler = allMembers.find(m => m.id === leaderMember.disciplerId);
+          if (leaderDiscipler && (leaderDiscipler.role === UserRole.PASTOR || leaderDiscipler.role === UserRole.CHURCH_ADMIN)) {
+            updates.pastorId = leaderDiscipler.id;
+          }
+        }
+      }
+    }
+
+    setProfileData(prev => ({ ...prev, ...updates }));
+  };
 
   const handleSave = async () => {
     try {
@@ -849,9 +877,15 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                           className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-zinc-900 text-zinc-500">Selecionar Origem</option>
-                          {['EVANGELISMO', 'VISITA DE CÉLULA', 'PEDIDO DE ORAÇÃO', 'OUTRA IGREJA', 'REDES SOCIAIS', 'AMIGOS / FAMÍLIA', 'OUTROS'].map(origin => (
-                            <option key={origin} value={origin} className="bg-zinc-900">{origin}</option>
-                          ))}
+                          {winActivities.length > 0 ? (
+                            winActivities.map(act => (
+                              <option key={act.id} value={act.label} className="bg-zinc-900">{act.label}</option>
+                            ))
+                          ) : (
+                            ['EVANGELISMO', 'VISITA DE CÉLULA', 'PEDIDO DE ORAÇÃO', 'OUTRA IGREJA', 'REDES SOCIAIS', 'AMIGOS / FAMÍLIA', 'OUTROS'].map(origin => (
+                              <option key={origin} value={origin} className="bg-zinc-900">{origin}</option>
+                            ))
+                          )}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                           <ArrowUpRight size={14} className="text-zinc-700" />
@@ -875,7 +909,7 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                         </div>
                         <select
                           value={profileData.cellId || ''}
-                          onChange={e => setProfileData({ ...profileData, cellId: e.target.value })}
+                          onChange={e => handleCellChange(e.target.value)}
                           className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-zinc-900 text-zinc-500">Selecionar Célula</option>
