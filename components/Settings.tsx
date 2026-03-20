@@ -138,17 +138,15 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
         // Garantir campos de endereço iniciais do cache
         cep: user.cep || user.user_metadata?.cep || '',
         street: user.street || user.user_metadata?.street || '',
-        number: user.number || user.user_metadata?.number || '',
-        neighborhood: user.neighborhood || user.user_metadata?.neighborhood || '',
-        city: user.city || user.user_metadata?.city || '',
         state: user.state || user.user_metadata?.state || '',
         origin: user.origin || user.user_metadata?.origin || '',
         conversionDate: user.conversionDate || user.user_metadata?.conversion_date || '',
         baptismDate: user.baptismDate || user.user_metadata?.baptism_date || '',
-        baptismHolySpiritDate: user.baptismHolySpiritDate || user.user_metadata?.baptism_holy_spirit_date || '',
         cellId: user.cellId || user.user_metadata?.cell_id || '',
         disciplerId: user.disciplerId || user.user_metadata?.discipler_id || '',
         pastorId: user.pastorId || user.user_metadata?.pastor_id || '',
+        newPassword: '',
+        confirmPassword: '',
       });
 
       let effectiveChurchId = user.churchId;
@@ -247,11 +245,23 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
               pastorId: updated.pastorId,
               conversionDate: updated.conversionDate,
               baptismDate: updated.baptismDate,
-              baptismHolySpiritDate: updated.baptismHolySpiritDate,
               origin: updated.origin,
               firstAccessCompleted: true
             } }
           });
+
+          // Atualização de Senha se preenchida
+          if (profileData.newPassword) {
+            if (profileData.newPassword !== profileData.confirmPassword) {
+              alert('As senhas não coincidem!');
+              setSaving(false);
+              return;
+            }
+            const { error: pwdError } = await supabase.auth.updateUser({ password: profileData.newPassword });
+            if (pwdError) throw pwdError;
+            // Limpar campos após sucesso
+            setProfileData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
+          }
 
           // Se o perfil estava incompleto, exibir modal de próximo passo (M12)
           if (wasProfileIncomplete) {
@@ -274,11 +284,23 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
               children: profileData.children,
               conversion_date: profileData.conversionDate,
               baptism_date: profileData.baptismDate,
-              baptism_holy_spirit_date: profileData.baptismHolySpiritDate,
               origin: profileData.origin,
             }
           });
           if (authError) throw authError;
+
+          // Atualização de Senha se preenchida
+          if (profileData.newPassword) {
+            if (profileData.newPassword !== profileData.confirmPassword) {
+              alert('As senhas não coincidem!');
+              setSaving(false);
+              return;
+            }
+            const { error: pwdError } = await supabase.auth.updateUser({ password: profileData.newPassword });
+            if (pwdError) throw pwdError;
+            // Limpar campos após sucesso
+            setProfileData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
+          }
           
           // Se for Master Admin, atualizar também o objeto virtual em cache para refletir na UI imediatamente
           await supabase.auth.updateUser({
@@ -815,16 +837,6 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Data de Batismo no Espírito Santo</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Zap size={16} className="text-amber-400" />
-                        </div>
-                        <input type="date" value={profileData.baptismHolySpiritDate || ''} onChange={e => setProfileData({ ...profileData, baptismHolySpiritDate: e.target.value })} className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
-                      </div>
-                    </div>
-
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Origem / Como nos conheceu?</label>
                       <div className="relative">
@@ -889,9 +901,16 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                           className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-zinc-900 text-zinc-500">Selecionar Discipulador</option>
-                          {allMembers.filter(m => m.id !== member?.id).map(m => (
-                            <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
-                          ))}
+                          {(() => {
+                            const linkedCell = allCells.find(c => c.id === profileData.cellId);
+                            const cellLeaders = linkedCell ? linkedCell.leaderIds || [] : [];
+                            return allMembers
+                              .filter(m => m.id !== member?.id)
+                              .filter(m => cellLeaders.length === 0 || cellLeaders.includes(m.id))
+                              .map(m => (
+                                <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
+                              ));
+                          })()}
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                           <ArrowUpRight size={14} className="text-zinc-700" />
@@ -911,13 +930,56 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                           className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all appearance-none cursor-pointer"
                         >
                           <option value="" className="bg-zinc-900 text-zinc-500">Selecionar Pastor</option>
-                          {allMembers.filter(m => m.role === UserRole.PASTOR).map(m => (
-                            <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
-                          ))}
+                          {allMembers
+                            .filter(m => m.role === UserRole.PASTOR || m.role === UserRole.CHURCH_ADMIN)
+                            .map(m => (
+                              <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
+                            ))
+                          }
                         </select>
                         <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                           <ArrowUpRight size={14} className="text-zinc-700" />
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Segurança e Alteração de Senha */}
+                    <div className="space-y-4 md:col-span-2 pt-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-rose-600 rounded-full" />
+                        <h4 className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Acesso e Segurança</h4>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nova Senha</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Lock size={16} className="text-zinc-600" />
+                        </div>
+                        <input 
+                          type="password" 
+                          value={profileData.newPassword || ''} 
+                          onChange={e => setProfileData({ ...profileData, newPassword: e.target.value })} 
+                          placeholder="Mínimo 6 caracteres"
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Confirmar Nova Senha</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <Check size={16} className="text-zinc-600" />
+                        </div>
+                        <input 
+                          type="password" 
+                          value={profileData.confirmPassword || ''} 
+                          onChange={e => setProfileData({ ...profileData, confirmPassword: e.target.value })} 
+                          placeholder="Repita a nova senha"
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" 
+                        />
                       </div>
                     </div>
 
@@ -968,31 +1030,34 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                         <input value={profileData.complement || ''} onChange={e => setProfileData({ ...profileData, complement: e.target.value })} placeholder="Apto, Bloco, etc" className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Bairro</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Map size={16} className="text-zinc-600" />
+                    {/* Bairro, Cidade e UF na mesma linha */}
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-12 gap-6">
+                      <div className="space-y-2 md:col-span-5">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Bairro</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Map size={16} className="text-zinc-600" />
+                          </div>
+                          <input value={profileData.neighborhood || ''} onChange={e => setProfileData({ ...profileData, neighborhood: e.target.value })} placeholder="Bairro" className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                         </div>
-                        <input value={profileData.neighborhood || ''} onChange={e => setProfileData({ ...profileData, neighborhood: e.target.value })} placeholder="Bairro" className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Cidade</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Building size={16} className="text-zinc-600" />
+                      <div className="space-y-2 md:col-span-5">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Cidade</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Building size={16} className="text-zinc-600" />
+                          </div>
+                          <input value={profileData.city || ''} onChange={e => setProfileData({ ...profileData, city: e.target.value })} placeholder="Cidade" className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                         </div>
-                        <input value={profileData.city || ''} onChange={e => setProfileData({ ...profileData, city: e.target.value })} placeholder="Cidade" className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">UF</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <MapPin size={16} className="text-zinc-600" />
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">UF</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <MapPin size={16} className="text-zinc-600" />
+                          </div>
+                          <input value={profileData.state || ''} onChange={e => setProfileData({ ...profileData, state: e.target.value })} placeholder="SP" maxLength={2} className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all uppercase placeholder:normal-case" />
                         </div>
-                        <input value={profileData.state || ''} onChange={e => setProfileData({ ...profileData, state: e.target.value })} placeholder="SP" maxLength={2} className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all" />
                       </div>
                     </div>
                   </div>
