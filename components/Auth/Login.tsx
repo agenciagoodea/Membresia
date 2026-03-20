@@ -9,6 +9,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,9 +19,18 @@ const Login: React.FC = () => {
 
     try {
       const trimmedEmail = email.trim().toLowerCase();
+      
+      if (isForgotPassword) {
+        await authService.resetPasswordForEmail(trimmedEmail);
+        alert('Se o e-mail estiver cadastrado, você receberá um link de recuperação em instantes.');
+        setIsForgotPassword(false);
+        setLoading(false);
+        return;
+      }
+
       const response = await authService.signIn(trimmedEmail, password);
       
-      if (response.profile?.status === 'PENDENTE' || response.profile?.status === MemberStatus.PENDING) {
+      if (response.profile?.status === 'PENDENTE' || (response.profile?.status as string) === 'PENDING') {
         await authService.signOut();
         setError('Desculpe, não foi possivel fazer o login, entre em contato com o seu Líder ou Pastor para aprovação do cadastro');
         setLoading(false);
@@ -85,23 +95,25 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Senha</label>
-                <button type="button" className="text-[10px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors">Esqueceu?</button>
+            {!isForgotPassword && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Senha</label>
+                  <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[10px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest transition-colors">Esqueceu?</button>
+                </div>
+                <div className="relative group/input">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within/input:text-blue-500 transition-colors" size={20} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-zinc-200 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all placeholder:text-zinc-700"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
-              <div className="relative group/input">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within/input:text-blue-500 transition-colors" size={20} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-zinc-200 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all placeholder:text-zinc-700"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
+            )}
 
             {error && (
               <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl text-[11px] font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
@@ -120,10 +132,22 @@ const Login: React.FC = () => {
               ) : (
                 <>
                   <LogIn size={20} className="group-hover/btn:translate-x-1 transition-transform" />
-                  ENTRAR NO SISTEMA
+                  {isForgotPassword ? 'ENVIAR RECUPERAÇÃO' : 'ENTRAR NO SISTEMA'}
                 </>
               )}
             </button>
+            <div className="flex flex-col items-center gap-3">
+              {isForgotPassword && (
+                <button type="button" onClick={() => setIsForgotPassword(false)} className="text-[10px] font-black text-zinc-500 hover:text-zinc-300 uppercase tracking-widest transition-colors mt-2">
+                  Voltar para o Login
+                </button>
+              )}
+              {!isForgotPassword && (
+                <button type="button" onClick={() => navigate('/cadastro')} className="text-[11px] font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors mt-2">
+                  Não é membro? <span className="text-blue-500 ml-1">Cadastre-se aqui</span>
+                </button>
+              )}
+            </div>
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-6">

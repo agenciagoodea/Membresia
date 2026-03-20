@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, User, Mail, Phone, Shield, Target, Layers, Users, Camera, ImagePlus, MapPin, Building, Home, Map, Check, Crop as CropIcon, Heart, Lock, Plus, Calendar } from 'lucide-react';
+import { X, Save, User, Mail, Phone, Shield, Target, Layers, Users, Camera, ImagePlus, MapPin, Building, Home, Map, Check, Crop as CropIcon, Heart, Lock, Plus, Calendar, Eye, EyeOff } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from './Shared/cropImage';
 import { Member, UserRole, LadderStage, Cell, MemberOrigin, MemberStatus, M12Activity } from '../types';
@@ -58,6 +58,9 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 	const [isCropping, setIsCropping] = useState(false);
 	const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
 	const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -543,13 +546,20 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 										<div className="relative">
 											<Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
 											<input
-												type="password"
+												type={showPassword ? 'text' : 'password'}
 												value={formData.password || ''}
 												onChange={(e) => setFormData({ ...formData, password: e.target.value })}
 												autoComplete="new-password"
-												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
+												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
 												placeholder="••••••••"
 											/>
+											<button
+												type="button"
+												onClick={() => setShowPassword(!showPassword)}
+												className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+											>
+												{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+											</button>
 										</div>
 									</div>
 
@@ -558,12 +568,19 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 										<div className="relative">
 											<Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
 											<input
-												type="password"
+												type={showConfirmPassword ? 'text' : 'password'}
 												value={confirmPassword}
 												onChange={(e) => setConfirmPassword(e.target.value)}
-												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
+												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
 												placeholder="••••••••"
 											/>
+											<button
+												type="button"
+												onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+												className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+											>
+												{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+											</button>
 										</div>
 									</div>
 								</div>
@@ -715,29 +732,6 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-medium"
 												placeholder="000.000.000-00"
 											/>
-										</div>
-									</div>
-
-									<div className="space-y-2">
-										<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Origem / Como Chegou</label>
-										<div className="relative">
-											<Users className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-											<select
-												value={formData.origin || ''}
-												onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
-												className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
-											>
-												<option value="" className="bg-zinc-950">Selecione a Origem</option>
-												{gainActivities.length > 0 ? (
-													gainActivities.map(cp => (
-														<option key={cp.id} value={cp.label} className="bg-zinc-950">{cp.label}</option>
-													))
-												) : (
-													Object.values(MemberOrigin).map(origin => (
-														<option key={origin} value={origin} className="bg-zinc-950">{origin}</option>
-													))
-												)}
-											</select>
 										</div>
 									</div>
 
