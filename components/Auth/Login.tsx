@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, Loader2, Heart, ShieldCheck, Sparkles } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { MemberStatus } from '../../types';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
