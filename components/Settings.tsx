@@ -618,10 +618,27 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                             onChange={(e) => setProfileData({ ...profileData, spouseId: e.target.value })}
                             className="w-full bg-zinc-950 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-600 transition-all appearance-none cursor-pointer"
                           >
-                            <option value="" className="bg-zinc-900">Selecione o Parceiro</option>
-                            {allMembers.filter(m => m.id !== member?.id).map(m => (
-                              <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
-                            ))}
+                            <option value="" className="bg-zinc-900 text-zinc-500">Selecione o Parceiro</option>
+                            {allMembers
+                              .filter(m => {
+                                // 1. Não ser o próprio usuário
+                                if (m.id === member?.id) return false;
+                                
+                                // 2. Filtro de Gênero Oposto
+                                if (profileData.sex === 'MASCULINO') return m.sex === 'FEMININO';
+                                if (profileData.sex === 'FEMININO') return m.sex === 'MASCULINO';
+                                
+                                return true; // Se o usuário não definiu gênero, mostra todos (menos ele mesmo)
+                              })
+                              .filter(m => {
+                                // 3. Ocultar membros que já possuem cônjuge linkado (exceto se for o próprio usuário atual)
+                                // Se m.spouseId existe e não é o ID do usuário logado, ele já está comprometido
+                                return !m.spouseId || m.spouseId === member?.id;
+                              })
+                              .map(m => (
+                                <option key={m.id} value={m.id} className="bg-zinc-900">{m.name}</option>
+                              ))
+                            }
                           </select>
                         </div>
                       </div>
@@ -647,6 +664,7 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                         </button>
                       </div>
 
+                      {profileData.hasChildren && (
                         <div className="mt-6 p-8 bg-zinc-950/50 border border-white/5 rounded-[2.5rem] space-y-8 animate-in slide-in-from-top-4">
                            <div className="flex items-center justify-between">
                               <h5 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Dependentes / Filhos</h5>
@@ -751,20 +769,22 @@ const Settings: React.FC<{ user: any }> = ({ user }) => {
                                               className="w-full bg-zinc-950/50 border border-white/5 rounded-xl px-5 py-3.5 text-xs font-bold text-white outline-none focus:ring-2 focus:ring-blue-600"
                                             />
                                          </div>
-                                         <div className="md:col-span-2">
-                                            <div className="inline-flex items-center gap-2 bg-blue-600/10 px-3 py-1 rounded-full">
-                                               <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
-                                               <span className="text-[8px] font-black text-blue-500/80 uppercase tracking-[0.2em] pt-0.5">
-                                                  {child.birthDate ? `${calculateAge(child.birthDate)} ANOS` : 'AGUARDANDO DATA'}
-                                               </span>
-                                            </div>
-                                         </div>
-                                      </div>
-                                   </div>
-                                </div>
+                                         <div className="md:col-span-2 flex items-center justify-center p-4 bg-blue-600/5 rounded-2xl border border-blue-500/10">
+                                             <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.3em] mb-1">Idade Atual</span>
+                                                <span className="text-4xl font-black text-blue-500 tracking-tighter">
+                                                   {child.birthDate ? `${calculateAge(child.birthDate)}` : '--'}
+                                                   <span className="text-sm ml-1 uppercase opacity-60">Anos</span>
+                                                </span>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
                               ))}
                            </div>
                         </div>
+                      )}
                     </div>
 
                     {/* Minha Jornada Cristã */}
