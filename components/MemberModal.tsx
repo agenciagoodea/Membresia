@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Save, User, Mail, Phone, Shield, Target, Layers, Users, Camera, MapPin, Building, Home, Map, Check, Crop as CropIcon, Heart, Lock, Plus, Calendar } from 'lucide-react';
+import { X, Save, User, Mail, Phone, Shield, Target, Layers, Users, Camera, ImagePlus, MapPin, Building, Home, Map, Check, Crop as CropIcon, Heart, Lock, Plus, Calendar } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from './Shared/cropImage';
 import { Member, UserRole, LadderStage, Cell, MemberOrigin, MemberStatus, M12Activity } from '../types';
@@ -58,6 +58,10 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 	const [isCropping, setIsCropping] = useState(false);
 	const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+
+	const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+	const cameraInputRef = useRef<HTMLInputElement>(null);
+	const galleryInputRef = useRef<HTMLInputElement>(null);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [fetchingCep, setFetchingCep] = useState(false);
@@ -347,12 +351,11 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 					</div>
 				) : (
 					<form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
-						<div className="flex flex-col items-center justify-center space-y-3 mb-6">
+						<div className="flex flex-col items-center justify-center space-y-3 mb-6 relative">
 							<div
-								onClick={() => fileInputRef.current?.click()}
+								onClick={() => setIsPhotoMenuOpen(!isPhotoMenuOpen)}
 								className="relative w-32 h-32 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all overflow-hidden group bg-zinc-900"
 							>
-								<input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
 								{photoPreview || formData.avatar ? (
 									<>
 										<img 
@@ -372,6 +375,30 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 									</div>
 								)}
 							</div>
+
+							{isPhotoMenuOpen && (
+								<div className="absolute top-32 z-50 bg-zinc-900 border border-white/10 p-2 rounded-2xl shadow-2xl flex flex-col gap-1 w-48 animate-in fade-in slide-in-from-top-2">
+									<button
+										type="button"
+										onClick={() => { cameraInputRef.current?.click(); setIsPhotoMenuOpen(false); }}
+										className="flex items-center gap-3 px-4 py-3 text-sm text-white font-medium hover:bg-zinc-800 rounded-xl transition-colors text-left"
+									>
+										<Camera size={18} className="text-blue-500" />
+										Tirar Foto
+									</button>
+									<button
+										type="button"
+										onClick={() => { galleryInputRef.current?.click(); setIsPhotoMenuOpen(false); }}
+										className="flex items-center gap-3 px-4 py-3 text-sm text-white font-medium hover:bg-zinc-800 rounded-xl transition-colors text-left"
+									>
+										<ImagePlus size={18} className="text-blue-500" />
+										Escolher da Galeria
+									</button>
+								</div>
+							)}
+
+							<input ref={cameraInputRef} type="file" className="hidden" accept="image/*" capture="user" onChange={handleFileChange} />
+							<input ref={galleryInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
 						</div>
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -474,7 +501,19 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 									<Target className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
 									<select
 										value={formData.stage}
-										onChange={(e) => setFormData({ ...formData, stage: e.target.value as LadderStage })}
+										onChange={(e) => {
+											const newStage = e.target.value as LadderStage;
+											let extraData: any = {};
+											if (newStage === 'ENVIAR') {
+												const m12Label = (allActivities || []).find(a => a.stage === 'ENVIAR' && a.label.toLowerCase().includes('m12'))?.label || 'Você é um M12?';
+												extraData.milestoneValues = {
+													...(formData.milestoneValues || {}),
+													[m12Label]: true
+												};
+												extraData.completedMilestones = Array.from(new Set([...(formData.completedMilestones || []), m12Label]));
+											}
+											setFormData({ ...formData, stage: newStage, ...extraData });
+										}}
 										className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
 									>
 										{Object.values(LadderStage).map(stage => (
@@ -503,28 +542,19 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 
 							{(formData.role === UserRole.CELL_LEADER_DISCIPLE || formData.role === UserRole.PASTOR || formData.role === UserRole.CHURCH_ADMIN) && (
 								<div className="space-y-2 md:col-span-2">
-									<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Células que Lidera (Eco-sistema)</label>
-									<div className="grid grid-cols-2 gap-2 mt-2">
-										{cells.map(cell => {
-											const isLeading = (formData.leadingCellIds || []).includes(cell.id);
-											return (
-												<button
-													key={cell.id}
-													type="button"
-													onClick={() => {
-														const current = formData.leadingCellIds || [];
-														const nextList = current.includes(cell.id) 
-															? current.filter(id => id !== cell.id)
-															: [...current, cell.id];
-														setFormData({ ...formData, leadingCellIds: nextList });
-													}}
-													className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all text-left flex items-center justify-between ${isLeading ? 'bg-blue-600 border-blue-500 text-white' : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:border-white/20'}`}
-												>
-													{cell.name}
-													{isLeading && <Check size={12} />}
-												</button>
-											);
-										})}
+									<label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Célula que Lidera (Eco-sistema)</label>
+									<div className="relative">
+										<Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+										<select
+											value={(formData.leadingCellIds && formData.leadingCellIds.length > 0) ? formData.leadingCellIds[0] : ''}
+											onChange={(e) => setFormData({ ...formData, leadingCellIds: e.target.value ? [e.target.value] : [] })}
+											className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm text-white focus:outline-none focus:border-blue-500 transition-all font-black uppercase appearance-none cursor-pointer"
+										>
+											<option value="" className="bg-zinc-950">Selecione a Célula que Lidera</option>
+											{cells.map(cell => (
+												<option key={cell.id} value={cell.id} className="bg-zinc-950">{cell.name}</option>
+											))}
+										</select>
 									</div>
 								</div>
 							)}
@@ -630,7 +660,7 @@ const MemberModal: React.FC<MemberModalProps> = ({ isOpen, onClose, onSave, memb
 								</div>
 								<div className="bg-zinc-900/40 border border-white/5 p-8 rounded-[2rem]">
 									<DynamicForm
-										fields={(allActivities || []).filter(a => a.stage === formData.stage && a.isActive)}
+										fields={(allActivities || []).filter(a => a.stage === formData.stage && a.isActive && (formData.stage !== 'ENVIAR' || a.label.toLowerCase().includes('m12')))}
 										values={formData.milestoneValues || {}}
 										onChange={async (fieldId, value) => {
 											const field = allActivities.find(f => f.id === fieldId);

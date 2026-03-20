@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChurchTenant, UserRole, LadderStage, MemberOrigin, Cell, Member, MemberStatus } from '../../types';
 import { churchService } from '../../services/churchService';
 import { memberService } from '../../services/memberService';
 import { cellService } from '../../services/cellService';
 import { m12Service } from '../../services/m12Service';
-import { CheckCircle2, UserPlus, Phone, Mail, User, Users, ShieldCheck, Lock, Upload, MapPin, Map, Home, Building, Camera, X, Crop as CropIcon } from 'lucide-react';
+import { CheckCircle2, UserPlus, Phone, Mail, User, Users, ShieldCheck, Lock, Upload, MapPin, Map, Home, Building, Camera, ImagePlus, X, Crop as CropIcon } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../Shared/cropImage';
 import DynamicForm from '../Shared/DynamicForm';
@@ -58,6 +58,10 @@ const PublicRegistration = () => {
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 	const [isCropping, setIsCropping] = useState(false);
 	const [isProcessingCrop, setIsProcessingCrop] = useState(false);
+
+	const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
+	const cameraInputRef = useRef<HTMLInputElement>(null);
+	const galleryInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		const loadChurch = async () => {
@@ -441,9 +445,9 @@ const PublicRegistration = () => {
 								</div>
 
 								{/* Upload de Avatar */}
-								<div className="flex items-center gap-6">
+								<div className="flex items-center gap-6 relative">
 									<div 
-										onClick={() => document.getElementById('avatar-upload')?.click()}
+										onClick={() => setIsPhotoMenuOpen(!isPhotoMenuOpen)}
 										className="relative w-24 h-24 rounded-[1.8rem] bg-zinc-900 border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all overflow-hidden group"
 									>
 										{photoPreview ? (
@@ -454,8 +458,33 @@ const PublicRegistration = () => {
 												<span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest leading-none">Subir Foto</span>
 											</div>
 										)}
-										<input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
 									</div>
+									
+									{/* Photo Menu */}
+									{isPhotoMenuOpen && (
+										<div className="absolute top-28 left-0 z-50 bg-zinc-900 border border-white/10 p-2 rounded-2xl shadow-2xl flex flex-col gap-1 w-48 animate-in fade-in slide-in-from-top-2">
+											<button
+												type="button"
+												onClick={() => { cameraInputRef.current?.click(); setIsPhotoMenuOpen(false); }}
+												className="flex items-center gap-3 px-4 py-3 text-sm text-white font-medium hover:bg-zinc-800 rounded-xl transition-colors text-left"
+											>
+												<Camera size={18} className="text-blue-500" />
+												Tirar Foto
+											</button>
+											<button
+												type="button"
+												onClick={() => { galleryInputRef.current?.click(); setIsPhotoMenuOpen(false); }}
+												className="flex items-center gap-3 px-4 py-3 text-sm text-white font-medium hover:bg-zinc-800 rounded-xl transition-colors text-left"
+											>
+												<ImagePlus size={18} className="text-blue-500" />
+												Escolher da Galeria
+											</button>
+										</div>
+									)}
+
+									<input ref={cameraInputRef} type="file" className="hidden" accept="image/*" capture="user" onChange={handleFileChange} />
+									<input ref={galleryInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+
 									<div className="hidden sm:block">
 										<p className="text-white text-xs font-bold uppercase mb-1">Foto de Perfil</p>
 										<p className="text-zinc-500 text-[10px] font-medium leading-relaxed max-w-[150px]">Uma boa foto ajuda na sua identificação ministerial.</p>
